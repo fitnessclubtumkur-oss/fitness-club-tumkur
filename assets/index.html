@@ -697,6 +697,81 @@ html, body {
       </div>
     </div>
 
+    <!-- ── SOCIAL TAB ──────────────────────────────── -->
+    <div class="tab-view" id="tab-social">
+      <div style="padding-top:16px;">
+
+        <!-- Points hero -->
+        <div style="background:linear-gradient(135deg,#0d1a0d,#0a160a);border:1px solid #1a3a1a;border-radius:var(--radius);padding:20px;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">Your Points</div>
+              <div id="social-points" style="font-family:var(--font-head);font-size:44px;font-weight:800;color:var(--accent);letter-spacing:-2px;line-height:1;">—</div>
+              <div id="social-rank" style="font-size:12px;color:var(--muted);margin-top:2px;"></div>
+            </div>
+            <div style="text-align:right;">
+              <button onclick="Social.checkAchievements()" style="padding:10px 16px;background:rgba(232,245,78,.15);border:1px solid rgba(232,245,78,.3);border-radius:8px;color:var(--accent);font-family:var(--font-head);font-size:12px;font-weight:700;cursor:pointer;">Check Badges</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-tabs -->
+        <div class="chips" id="social-tabs" style="margin-bottom:16px;">
+          <div class="chip active" onclick="Social.switchTab('feed')">📰 Feed</div>
+          <div class="chip" onclick="Social.switchTab('badges')">🏆 Badges</div>
+          <div class="chip" onclick="Social.switchTab('leaderboard')">📊 Leaderboard</div>
+          <div class="chip" onclick="Social.switchTab('friends')">👥 Friends</div>
+          <div class="chip" onclick="Social.switchTab('clubs')">🏃 Clubs</div>
+          <div class="chip" onclick="Social.switchTab('challenges')">⚡ Challenges</div>
+        </div>
+
+        <!-- Feed -->
+        <div id="social-feed-view">
+          <div id="social-feed-content">
+            <div class="empty"><div class="empty-icon">📰</div><div class="empty-text">Loading feed...</div></div>
+          </div>
+        </div>
+
+        <!-- Badges -->
+        <div id="social-badges-view" style="display:none;">
+          <div id="social-badges-content"></div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div id="social-lb-view" style="display:none;">
+          <div class="chips" id="lb-type-chips" style="margin-bottom:12px;">
+            <div class="chip active" onclick="Social.loadLeaderboard('MOST_ACTIVE')">Most Active</div>
+            <div class="chip" onclick="Social.loadLeaderboard('POINTS')">Points</div>
+            <div class="chip" onclick="Social.loadLeaderboard('MACRO_ADHERENCE')">Nutrition</div>
+          </div>
+          <div id="social-lb-content"></div>
+        </div>
+
+        <!-- Friends -->
+        <div id="social-friends-view" style="display:none;">
+          <div class="search-bar" style="margin-bottom:12px;">
+            <span>🔍</span>
+            <input type="text" id="friend-search" placeholder="Search by name or email..." oninput="Social.searchUsers(this.value)">
+          </div>
+          <div id="friend-search-results" style="margin-bottom:16px;"></div>
+          <div id="social-friends-content"></div>
+        </div>
+
+        <!-- Clubs -->
+        <div id="social-clubs-view" style="display:none;">
+          <button onclick="Social.showCreateClub()" class="btn btn-ghost" style="margin-bottom:12px;">+ Create Club</button>
+          <div id="social-clubs-content"></div>
+        </div>
+
+        <!-- Challenges -->
+        <div id="social-challenges-view" style="display:none;">
+          <button onclick="Social.showCreateChallenge()" class="btn btn-ghost" style="margin-bottom:12px;">+ Create Challenge</button>
+          <div id="social-challenges-content"></div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- ── NUTRITION TAB ──────────────────────────────── -->
     <div class="tab-view" id="tab-nutrition">
       <div style="padding-top:16px;">
@@ -755,6 +830,9 @@ html, body {
     </button>
     <button class="nav-item" id="nav-nutrition" onclick="UI.showTab('nutrition')">
       <span class="nav-icon">🧬</span><span>Nutrients</span>
+    </button>
+    <button class="nav-item" id="nav-social" onclick="UI.showTab('social')">
+      <span class="nav-icon">👥</span><span>Social</span>
     </button>
     <button class="nav-item" id="nav-profile" onclick="UI.showTab('profile')">
       <span class="nav-icon">👤</span><span>Profile</span>
@@ -901,6 +979,7 @@ const UI = {
     if (tab === 'profile') Profile.load();
     if (tab === 'nutrition') Nutrition.loadToday();
     if (tab === 'kitchen') Kitchen.load();
+    if (tab === 'social')  Social.load();
   },
 
   authTab(tab) {
@@ -2129,6 +2208,347 @@ const Kitchen = {
     } catch (e) {
       Toast.show(e.message || 'Log failed', 'error');
     }
+  },
+};
+
+
+// ─────────────────────────────────────────────────────────
+// SOCIAL & GAMIFICATION
+// ─────────────────────────────────────────────────────────
+const Social = {
+  currentTab: 'feed',
+
+  async load() {
+    await Social.loadPoints();
+    Social.switchTab(Social.currentTab);
+  },
+
+  async loadPoints() {
+    try {
+      const res = await api('GET', '/points');
+      if (res.success) {
+        const p = res.data.points;
+        document.getElementById('social-points').textContent = p.total_points.toLocaleString('en-IN');
+        document.getElementById('social-rank').textContent = `${p.monthly_points} pts this month`;
+      }
+    } catch {}
+  },
+
+  switchTab(tab) {
+    Social.currentTab = tab;
+    ['feed','badges','leaderboard','friends','clubs','challenges'].forEach(t => {
+      const v = document.getElementById(`social-${t === 'leaderboard' ? 'lb' : t}-view`);
+      if (v) v.style.display = t === tab ? 'block' : 'none';
+    });
+    document.querySelectorAll('#social-tabs .chip').forEach(c => c.classList.remove('active'));
+    const labels = { feed: '📰 Feed', badges: '🏆 Badges', leaderboard: '📊 Leaderboard', friends: '👥 Friends', clubs: '🏃 Clubs', challenges: '⚡ Challenges' };
+    document.querySelectorAll('#social-tabs .chip').forEach(c => { if (c.textContent === labels[tab]) c.classList.add('active'); });
+
+    if (tab === 'feed')        Social.loadFeed();
+    if (tab === 'badges')      Social.loadBadges();
+    if (tab === 'leaderboard') Social.loadLeaderboard('MOST_ACTIVE');
+    if (tab === 'friends')     Social.loadFriends();
+    if (tab === 'clubs')       Social.loadClubs();
+    if (tab === 'challenges')  Social.loadChallenges();
+  },
+
+  async loadFeed() {
+    try {
+      const res = await api('GET', '/feed');
+      const feed = res.data?.feed || [];
+      const el = document.getElementById('social-feed-content');
+      if (!feed.length) {
+        el.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">Add friends to see their activity.<br>Complete workouts to appear here!</div></div>';
+        return;
+      }
+      el.innerHTML = feed.map(item => Social.feedCard(item)).join('');
+    } catch {}
+  },
+
+  feedCard(item) {
+    const typeEmoji = { CARDIO:'🏃', RESISTANCE:'🏋️', RUNNING:'👟', YOGA:'🧘', AEROBICS:'💃', TREKKING:'🏔️' };
+    const d = item.data;
+    const time = new Date(item.timestamp).toLocaleDateString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+
+    if (item.type === 'WORKOUT') {
+      return `<div class="card" style="padding:14px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="font-size:24px;">${typeEmoji[d.type] || '🏋️'}</div>
+          <div style="flex:1;"><div style="font-weight:600;font-size:14px;">${d.user?.name || 'You'} logged a ${d.type?.toLowerCase()} workout</div>
+          <div style="font-size:11px;color:var(--muted);">${time}</div></div>
+          <div style="font-family:var(--font-head);font-weight:700;color:var(--accent2);">${d.calories_burned?.toFixed(0)} kcal</div>
+        </div>
+        ${d.user?.id && d.user.id !== State.user?.id ? `<button onclick="Social.sendKudos('${d.user.id}','${d.id}')" style="padding:6px 14px;background:rgba(232,245,78,.1);border:1px solid rgba(232,245,78,.2);border-radius:6px;color:var(--accent);font-size:11px;font-family:var(--font-head);font-weight:700;cursor:pointer;">👏 Give Kudos</button>` : ''}
+      </div>`;
+    }
+    if (item.type === 'ACHIEVEMENT') {
+      return `<div class="card" style="padding:14px;margin-bottom:10px;background:rgba(232,245,78,.04);border-color:rgba(232,245,78,.2);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="font-size:28px;">🏆</div>
+          <div><div style="font-weight:600;font-size:14px;">${d.user?.name || 'You'} earned <span style="color:var(--accent);">${d.achievement?.name}</span></div>
+          <div style="font-size:12px;color:var(--muted);">${d.achievement?.description} · ${time}</div></div>
+        </div>
+      </div>`;
+    }
+    if (item.type === 'KUDOS') {
+      return `<div class="card" style="padding:14px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="font-size:24px;">👏</div>
+          <div><div style="font-weight:600;font-size:14px;">${d.sender?.name} gave kudos to ${d.receiver?.name}</div>
+          <div style="font-size:12px;color:var(--muted);">"${d.message || 'Great work!'}" · ${time}</div></div>
+        </div>
+      </div>`;
+    }
+    return '';
+  },
+
+  async loadBadges() {
+    try {
+      const res = await api('GET', '/achievements');
+      if (!res.success) return;
+      const { achievements, earned_count, total_count, points } = res.data;
+      const el = document.getElementById('social-badges-content');
+
+      const catEmoji = { FITNESS:'🏋️', NUTRITION:'🥗', KITCHEN:'🍽️', SOCIAL:'👥', STREAK:'🔥' };
+      let html = `<div style="font-size:13px;color:var(--muted);margin-bottom:16px;">${earned_count} / ${total_count} badges earned · ${points.total_points} total points</div>`;
+
+      for (const [cat, list] of Object.entries(achievements)) {
+        if (!list.length) continue;
+        html += `<div style="font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:16px 0 10px;">${catEmoji[cat] || ''} ${cat}</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:8px;">
+          ${list.map(a => `<div style="background:${a.earned ? 'rgba(232,245,78,.08)' : 'var(--bg2)'};border:1px solid ${a.earned ? 'rgba(232,245,78,.3)' : 'var(--border)'};border-radius:var(--radius-sm);padding:14px;opacity:${a.earned ? '1' : '0.5'};">
+            <div style="font-size:22px;margin-bottom:6px;">${a.earned ? '🏅' : '🔒'}</div>
+            <div style="font-family:var(--font-head);font-weight:700;font-size:13px;color:${a.earned ? 'var(--accent)' : 'var(--muted)'};">${a.name}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">${a.description}</div>
+            <div style="font-size:11px;color:#ff6b35;margin-top:4px;font-weight:600;">+${a.points} pts</div>
+            ${a.earned_at ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;">${new Date(a.earned_at).toLocaleDateString('en-IN')}</div>` : ''}
+          </div>`).join('')}
+        </div>`;
+      }
+      el.innerHTML = html;
+    } catch {}
+  },
+
+  async loadLeaderboard(type) {
+    try {
+      document.querySelectorAll('#lb-type-chips .chip').forEach(c => c.classList.remove('active'));
+      event?.target?.classList.add('active');
+      const res = await api('GET', `/leaderboards?type=${type}&period=MONTHLY`);
+      if (!res.success) return;
+      const { entries, your_rank, your_metric } = res.data;
+      const medal = ['🥇','🥈','🥉'];
+      const typeLabel = { MOST_ACTIVE: 'workouts', POINTS: 'points', MACRO_ADHERENCE: 'days hitting protein goal' };
+
+      document.getElementById('social-lb-content').innerHTML = `
+        ${your_rank ? `<div class="card" style="padding:12px;margin-bottom:12px;background:rgba(232,245,78,.06);border-color:rgba(232,245,78,.2);">
+          <div style="font-family:var(--font-head);font-weight:800;color:var(--accent);">Your rank: #${your_rank}</div>
+          <div style="font-size:12px;color:var(--muted);">${your_metric} ${typeLabel[type] || ''} this month</div>
+        </div>` : ''}
+        <div class="card" style="padding:0;overflow:hidden;">
+          ${entries.map((e, i) => `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:${e.user?.id === State.user?.id ? 'rgba(232,245,78,.04)' : 'transparent'};">
+            <div style="font-family:var(--font-head);font-weight:800;font-size:18px;width:32px;text-align:center;">${medal[i] || '#'+(i+1)}</div>
+            <div style="flex:1;font-weight:600;font-size:14px;">${e.user?.name || 'Unknown'}</div>
+            <div style="font-family:var(--font-head);font-weight:700;color:var(--accent);">${Math.round(e.metric_value)}</div>
+          </div>`).join('')}
+          ${!entries.length ? '<div class="empty" style="padding:24px;"><div class="empty-text">No data yet — log workouts to appear!</div></div>' : ''}
+        </div>`;
+    } catch {}
+  },
+
+  async loadFriends() {
+    try {
+      const res = await api('GET', '/friends');
+      if (!res.success) return;
+      const { friends, pending_requests } = res.data;
+      const el = document.getElementById('social-friends-content');
+
+      let html = '';
+      if (pending_requests.length) {
+        html += `<div style="font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--warn);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;">⏳ Pending Requests</div>`;
+        html += pending_requests.map(r => `<div class="card" style="padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+          <div style="font-size:24px;">👤</div>
+          <div style="flex:1;font-weight:600;">${r.requester?.name}</div>
+          <button onclick="Social.acceptFriend('${r.id}')" style="padding:8px 14px;background:var(--accent);border:none;border-radius:6px;color:#0d0d0d;font-size:12px;font-family:var(--font-head);font-weight:700;cursor:pointer;">Accept</button>
+        </div>`).join('');
+      }
+
+      html += `<div style="font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;">${friends.length} Friends</div>`;
+      html += friends.length
+        ? friends.map(f => `<div class="card" style="padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+            <div style="font-size:28px;">👤</div>
+            <div style="flex:1;font-weight:600;">${f.friend?.name}</div>
+            <button onclick="Social.sendKudos('${f.friend.id}',null)" style="padding:6px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;cursor:pointer;">👏 Kudos</button>
+          </div>`).join('')
+        : '<div class="empty" style="padding:20px;"><div class="empty-text">No friends yet.<br>Search and add friends above.</div></div>';
+
+      el.innerHTML = html;
+    } catch {}
+  },
+
+  searchTimeout: null,
+  searchUsers(q) {
+    clearTimeout(Social.searchTimeout);
+    const el = document.getElementById('friend-search-results');
+    if (!q.trim()) { el.innerHTML = ''; return; }
+    Social.searchTimeout = setTimeout(async () => {
+      try {
+        const res = await api('GET', `/users/search?q=${encodeURIComponent(q)}`);
+        const users = res.data?.users || [];
+        el.innerHTML = users.length
+          ? users.map(u => `<div class="card" style="padding:12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+              <div style="font-size:24px;">👤</div>
+              <div style="flex:1;font-weight:600;">${u.name}</div>
+              <button onclick="Social.addFriend('${u.id}')" style="padding:8px 14px;background:var(--accent);border:none;border-radius:6px;color:#0d0d0d;font-size:12px;font-family:var(--font-head);font-weight:700;cursor:pointer;">Add</button>
+            </div>`).join('')
+          : '<div style="padding:12px;color:var(--muted);font-size:13px;">No users found</div>';
+      } catch {}
+    }, 400);
+  },
+
+  async addFriend(receiverId) {
+    try {
+      const res = await api('POST', '/friends/request', { receiver_id: receiverId });
+      if (res.success) { Toast.show('Friend request sent! 🤝', 'success'); Social.loadFriends(); }
+    } catch (e) { Toast.show(e.message, 'error'); }
+  },
+
+  async acceptFriend(id) {
+    try {
+      const res = await api('POST', `/friends/${id}/accept`);
+      if (res.success) { Toast.show('Friend added! 🤝', 'success'); Social.loadFriends(); }
+    } catch (e) { Toast.show(e.message, 'error'); }
+  },
+
+  async sendKudos(receiverId, workoutId) {
+    const msg = prompt('Add a message (optional):') || '';
+    try {
+      const res = await api('POST', '/kudos', { receiver_id: receiverId, workout_id: workoutId, message: msg });
+      if (res.success) Toast.show('Kudos sent! 👏', 'success');
+    } catch (e) { Toast.show(e.message, 'error'); }
+  },
+
+  async loadClubs() {
+    try {
+      const res = await api('GET', '/clubs');
+      const clubs = res.data?.clubs || [];
+      const el = document.getElementById('social-clubs-content');
+      const typeEmoji = { RUNNING:'🏃', STRENGTH:'💪', YOGA:'🧘', AEROBICS:'💃', TREKKING:'🏔️', WEIGHT_LOSS:'🔥', GENERAL_FITNESS:'⭐' };
+
+      el.innerHTML = clubs.length
+        ? clubs.map(c => `<div class="card" style="padding:14px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div style="flex:1;">
+                <div style="font-weight:700;font-size:15px;">${typeEmoji[c.interest_type] || '🏃'} ${c.name}</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:3px;">${c.description || ''}</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">${c.member_count} members · ${c.location || 'Online'}</div>
+              </div>
+              ${!c.joined
+                ? `<button onclick="Social.joinClub('${c.id}')" style="padding:8px 14px;background:var(--accent);border:none;border-radius:6px;color:#0d0d0d;font-size:12px;font-family:var(--font-head);font-weight:700;cursor:pointer;white-space:nowrap;margin-left:10px;">Join</button>`
+                : `<div style="color:var(--success);font-size:12px;font-family:var(--font-head);font-weight:700;margin-left:10px;">✓ Joined</div>`}
+            </div>
+          </div>`).join('')
+        : '<div class="empty"><div class="empty-icon">🏃</div><div class="empty-text">No clubs yet.<br>Create the first one!</div></div>';
+    } catch {}
+  },
+
+  async joinClub(id) {
+    try {
+      const res = await api('POST', `/clubs/${id}/join`);
+      if (res.success) { Toast.show(res.message, 'success'); Social.loadClubs(); }
+    } catch (e) { Toast.show(e.message, 'error'); }
+  },
+
+  showCreateClub() {
+    const name = prompt('Club name:');
+    if (!name) return;
+    const type = prompt('Interest type (RUNNING/STRENGTH/YOGA/AEROBICS/TREKKING/WEIGHT_LOSS/GENERAL_FITNESS):') || 'GENERAL_FITNESS';
+    const loc  = prompt('Location (optional):') || '';
+    Social.createClub(name, type.toUpperCase(), loc);
+  },
+
+  async createClub(name, interest_type, location) {
+    try {
+      const res = await api('POST', '/clubs', { name, interest_type, location });
+      if (res.success) { Toast.show('Club created! 🎉', 'success'); Social.loadClubs(); }
+    } catch (e) { Toast.show(e.message, 'error'); }
+  },
+
+  async loadChallenges() {
+    try {
+      const [allRes, mineRes] = await Promise.all([
+        api('GET', '/challenges'),
+        api('GET', '/challenges/mine'),
+      ]);
+      const all = allRes.data?.challenges || [];
+      const mine = mineRes.data?.challenges || [];
+      const joinedIds = new Set(mine.map(m => m.challenge_id));
+      const el = document.getElementById('social-challenges-content');
+
+      const typeLabel = { DISTANCE_KM:'km to run', WORKOUT_COUNT:'workouts', CALORIE_BURN:'kcal to burn' };
+      const remaining = (c) => Math.max(0, Math.ceil((new Date(c.ends_at) - new Date()) / 86400000));
+
+      el.innerHTML = all.length
+        ? all.map(c => {
+            const myEntry = mine.find(m => m.challenge_id === c.id);
+            const pct = myEntry ? Math.min(100, Math.round((myEntry.progress / c.target_value) * 100)) : 0;
+            return `<div class="card" style="padding:14px;margin-bottom:10px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <div>
+                  <div style="font-weight:700;font-size:15px;">${c.name}</div>
+                  <div style="font-size:11px;color:var(--muted);">Goal: ${c.target_value} ${typeLabel[c.target_type] || ''} · ${remaining(c)} days left · ${c.participant_count} joined</div>
+                </div>
+                ${!c.joined
+                  ? `<button onclick="Social.joinChallenge('${c.id}')" style="padding:8px 14px;background:var(--accent2);border:none;border-radius:6px;color:#fff;font-size:12px;font-family:var(--font-head);font-weight:700;cursor:pointer;white-space:nowrap;margin-left:10px;">Join</button>`
+                  : '<div style="color:var(--success);font-size:12px;font-family:var(--font-head);font-weight:700;margin-left:10px;">✓ In</div>'}
+              </div>
+              ${myEntry ? `<div style="margin-top:8px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                  <span style="font-size:11px;color:var(--muted);">Progress</span>
+                  <span style="font-size:11px;font-family:var(--font-head);font-weight:700;color:var(--accent);">${myEntry.progress.toFixed(1)} / ${c.target_value} (${pct}%)</span>
+                </div>
+                <div style="height:5px;background:var(--bg3);border-radius:3px;"><div style="width:${pct}%;background:var(--accent);height:100%;border-radius:3px;"></div></div>
+              </div>` : ''}
+            </div>`;
+          }).join('')
+        : '<div class="empty"><div class="empty-icon">⚡</div><div class="empty-text">No challenges yet.<br>Create one to get started!</div></div>';
+    } catch {}
+  },
+
+  async joinChallenge(id) {
+    try {
+      const res = await api('POST', `/challenges/${id}/join`);
+      if (res.success) { Toast.show('Challenge joined! 💪', 'success'); Social.loadChallenges(); }
+    } catch (e) { Toast.show(e.message, 'error'); }
+  },
+
+  showCreateChallenge() {
+    const name  = prompt('Challenge name:'); if (!name) return;
+    const type  = prompt('Type (DISTANCE_KM / WORKOUT_COUNT / CALORIE_BURN):') || 'WORKOUT_COUNT';
+    const val   = parseFloat(prompt(`Target ${type}:`) || '10');
+    const days  = parseInt(prompt('Duration in days:') || '30');
+    const start = new Date().toISOString();
+    const end   = new Date(Date.now() + days * 86400000).toISOString();
+    Social.createChallenge(name, type.toUpperCase(), val, start, end);
+  },
+
+  async createChallenge(name, target_type, target_value, starts_at, ends_at) {
+    try {
+      const res = await api('POST', '/challenges', { name, target_type, target_value, starts_at, ends_at });
+      if (res.success) { Toast.show('Challenge created! ⚡', 'success'); Social.loadChallenges(); }
+    } catch (e) { Toast.show(e.message, 'error'); }
+  },
+
+  async checkAchievements() {
+    try {
+      const res = await api('POST', '/achievements/check');
+      if (res.success) {
+        Toast.show(res.data.message, res.data.count > 0 ? 'success' : 'info');
+        if (res.data.count > 0) {
+          Social.loadPoints();
+          Social.loadBadges();
+        }
+      }
+    } catch (e) { Toast.show(e.message, 'error'); }
   },
 };
 
