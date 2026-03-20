@@ -4,6 +4,7 @@ nixPkgs = ["nodejs_22", "openssl"]
 [phases.install]
 cmds = [
   "npm cache clean --force",
+  "rm -f package-lock.json",
   "npm install --omit=dev",
   "npx prisma generate"
 ]
