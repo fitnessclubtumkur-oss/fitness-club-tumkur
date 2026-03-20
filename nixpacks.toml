@@ -9,4 +9,4 @@ cmds = [
 ]
 
 [start]
-cmd = "npx prisma db push --accept-data-loss && node src/server.js"
+cmd = "node src/server.js"

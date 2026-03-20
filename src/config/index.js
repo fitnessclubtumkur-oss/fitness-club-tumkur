@@ -18,16 +18,21 @@ const config = {
   },
 
   redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
+    url: process.env.REDIS_URL || null, // null = use memory fallback
   },
 
   jwt: {
-    secret: process.env.JWT_SECRET || 'dev_secret_change_in_prod_min_64_chars_required',
+    // If JWT_SECRET not set, generate a deterministic one from DATABASE_URL
+    // so tokens survive restarts but differ between deployments
+    secret: process.env.JWT_SECRET ||
+      require('crypto').createHash('sha256')
+        .update(process.env.DATABASE_URL || 'dev-secret-please-set-jwt-secret')
+        .digest('hex'),
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
 
   bcrypt: {
-    rounds: parseInt(process.env.BCRYPT_ROUNDS, 10) || 12,
+    rounds: parseInt(process.env.BCRYPT_ROUNDS, 10) || 10,
   },
 
   rateLimit: {
@@ -58,17 +63,11 @@ const config = {
   },
 };
 
-// Validate critical config in production
-if (config.app.env === 'production') {
-  const required = ['DATABASE_URL', 'REDIS_URL', 'JWT_SECRET'];
-  for (const key of required) {
-    if (!process.env[key]) {
-      throw new Error(`Missing required env variable: ${key}`);
-    }
-  }
-  if (config.jwt.secret.length < 32) {
-    throw new Error('JWT_SECRET must be at least 32 characters');
-  }
+// Only DATABASE_URL is hard-required — Railway injects it from the Postgres plugin
+if (!config.db.url) {
+  console.error('FATAL: DATABASE_URL environment variable is not set.');
+  console.error('On Railway: Add a PostgreSQL database to your project.');
+  process.exit(1);
 }
 
 module.exports = config;
