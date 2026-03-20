@@ -1117,18 +1117,20 @@ const Auth = {
   },
 
   async postLogin() {
-    // Check if profile set up
+    // Always show app first — dashboard handles missing profile gracefully
+    UI.showScreen('s-app');
+    greet();
+
     try {
       const res = await api('GET', '/profile');
       if (!res.success || !res.data?.profile) {
-        Onboard.start();
+        // No profile — show dashboard with setup prompt (don't force onboarding overlay)
+        Dashboard.renderNoProfile && Dashboard.renderNoProfile();
         return;
       }
-      State.goals = (await api('GET', '/profile/goals')).data?.goals;
+      State.goals = (await api('GET', '/profile/goals')).catch(() => null).then(r => r?.data?.goals);
     } catch {}
-    UI.showScreen('s-app');
     Dashboard.load();
-    greet();
   },
 
   async logout() {
@@ -1264,8 +1266,8 @@ const Onboard = {
         State.goals = goalsRes.data?.goals;
         Toast.show('Profile saved! Ready to crush it 🔥', 'success');
         UI.showScreen('s-app');
-        Dashboard.load();
         greet();
+        await Dashboard.load();
       } catch (e) {
         Toast.show(e.message, 'error');
       }
@@ -1284,16 +1286,49 @@ const Dashboard = {
   async load() {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const [sumRes, goalsRes] = await Promise.all([
-        api('GET', `/daily-summary?date=${today}`),
-        api('GET', '/profile/goals'),
-      ]);
-      State.summary = sumRes.data;
-      State.goals   = goalsRes.data?.goals;
+
+      // Load daily summary (safe — works even without profile)
+      const sumRes = await api('GET', `/daily-summary?date=${today}`).catch(() => null);
+      State.summary = sumRes?.data || null;
+
+      // Load goals separately — may 404 if profile not set up yet
+      const goalsRes = await api('GET', '/profile/goals').catch(() => null);
+      State.goals = goalsRes?.data?.goals || null;
+
+      // If no profile yet, show setup prompt instead of crashing
+      if (!State.goals) {
+        Dashboard.renderNoProfile();
+        return;
+      }
+
       Dashboard.render(State.summary, State.goals);
     } catch (e) {
       console.warn('Dashboard load error:', e);
+      Dashboard.renderNoProfile();
     }
+  },
+
+  renderNoProfile() {
+    // Show welcome + setup prompt on dashboard
+    const cal = document.getElementById('net-cal');
+    if (cal) {
+      cal.closest('.cal-hero').innerHTML = `
+        <div style="text-align:center;padding:10px 0;">
+          <div style="font-size:36px;margin-bottom:8px;">👋</div>
+          <div style="font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--accent);margin-bottom:6px;">Welcome to FitFuel!</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">Set up your profile to start tracking.</div>
+          <button onclick="Onboard.start()" style="padding:14px 28px;background:var(--accent);border:none;border-radius:10px;color:#0d0d0d;font-family:var(--font-head);font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.3px;">SET UP PROFILE →</button>
+        </div>`;
+    }
+    // Clear other dashboard sections
+    const macroCard = document.querySelector('.card.fade-in');
+    if (macroCard) macroCard.style.display = 'none';
+    const warnContainer = document.getElementById('warnings-container');
+    if (warnContainer) warnContainer.innerHTML = '';
+    const todayWorkouts = document.getElementById('today-workouts');
+    if (todayWorkouts) todayWorkouts.innerHTML = '<div class="empty"><div class="empty-text">Complete profile setup to see your dashboard</div></div>';
+    const todayMeals = document.getElementById('today-meals-summary');
+    if (todayMeals) todayMeals.innerHTML = '<div class="empty"><div class="empty-text">Log meals after completing setup</div></div>';
   },
 
   render(s, goals) {
@@ -1779,7 +1814,13 @@ const Profile = {
         </div>
       `;
     } catch (e) {
-      document.getElementById('profile-content').innerHTML = `<div class="empty"><div class="empty-text">Could not load profile.</div></div>`;
+      document.getElementById('profile-content').innerHTML = `
+        <div class="card" style="text-align:center;padding:32px 20px;">
+          <div style="font-size:48px;margin-bottom:12px;">👤</div>
+          <div style="font-family:var(--font-head);font-size:18px;font-weight:800;margin-bottom:8px;">Profile Not Set Up</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Complete your profile to get personalised calorie and macro targets.</div>
+          <button onclick="Onboard.start()" style="padding:14px 28px;background:var(--accent);border:none;border-radius:10px;color:#0d0d0d;font-family:var(--font-head);font-size:14px;font-weight:800;cursor:pointer;">SET UP PROFILE →</button>
+        </div>`;
     }
   },
 };
