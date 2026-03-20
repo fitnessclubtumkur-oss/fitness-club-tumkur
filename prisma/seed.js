@@ -149,60 +149,77 @@ const SAMPLE_KITCHEN = {
 };
 
 // ─── MAIN SEED ────────────────────────────────────────────────────────────────
+const SEGMENTS = [
+  { name: 'Cubbon Park Loop', city: 'Bangalore', start_lat: 12.9716, start_lng: 77.5946, end_lat: 12.9716, end_lng: 77.5946, distance_km: 3.2, elevation_m: 0 },
+  { name: 'Lalbagh Morning Sprint', city: 'Bangalore', start_lat: 12.9507, start_lng: 77.5848, end_lat: 12.9507, end_lng: 77.5848, distance_km: 2.8, elevation_m: 5 },
+  { name: 'Ulsoor Lake Lap', city: 'Bangalore', start_lat: 12.9819, start_lng: 77.6198, end_lat: 12.9819, end_lng: 77.6198, distance_km: 2.4, elevation_m: 0 },
+  { name: 'Nandi Hills Trek (Base to Summit)', city: 'Nandi Hills', start_lat: 13.3617, start_lng: 77.6836, end_lat: 13.3700, end_lng: 77.6872, distance_km: 3.5, elevation_m: 450 },
+  { name: 'Skandagiri Night Trek', city: 'Chikballapur', start_lat: 13.4396, start_lng: 77.6770, end_lat: 13.4450, end_lng: 77.6810, distance_km: 4.0, elevation_m: 500 },
+];
+
+// ─── KITCHEN MEALS MENU ──────────────────────────────────────────────────────
+const KITCHEN_MEALS = [
+  // BREAKFAST
+  { name: 'Masala Oats Bowl',          category: 'BREAKFAST', price_inr: 89,  calories: 320, protein_g: 12, carbs_g: 52, fats_g: 7,  fiber_g: 6.0, serving_weight: 300, is_vegetarian: true, is_vegan: true },
+  { name: 'Ragi Idli with Sambar',     category: 'BREAKFAST', price_inr: 75,  calories: 280, protein_g: 10, carbs_g: 48, fats_g: 5,  fiber_g: 4.0, serving_weight: 280, is_vegetarian: true, is_vegan: true },
+  { name: 'Egg White Omelette & Toast',category: 'BREAKFAST', price_inr: 110, calories: 310, protein_g: 28, carbs_g: 24, fats_g: 9,  fiber_g: 2.0, serving_weight: 250, is_vegetarian: false },
+  { name: 'Moong Dal Chilla',          category: 'BREAKFAST', price_inr: 85,  calories: 260, protein_g: 14, carbs_g: 38, fats_g: 6,  fiber_g: 5.0, serving_weight: 220, is_vegetarian: true, is_vegan: true },
+  { name: 'Greek Yogurt Parfait',      category: 'BREAKFAST', price_inr: 130, calories: 290, protein_g: 18, carbs_g: 35, fats_g: 7,  fiber_g: 3.0, serving_weight: 250, is_vegetarian: true },
+  { name: 'Poha with Peanuts',         category: 'BREAKFAST', price_inr: 70,  calories: 350, protein_g: 9,  carbs_g: 58, fats_g: 10, fiber_g: 3.5, serving_weight: 300, is_vegetarian: true, is_vegan: true },
+
+  // LUNCH
+  { name: 'Grilled Chicken Rice Bowl', category: 'LUNCH', price_inr: 189, calories: 480, protein_g: 42, carbs_g: 48, fats_g: 10, fiber_g: 3.0, serving_weight: 400, is_vegetarian: false },
+  { name: 'Paneer Tikka with Roti',    category: 'LUNCH', price_inr: 175, calories: 440, protein_g: 28, carbs_g: 46, fats_g: 16, fiber_g: 3.5, serving_weight: 380, is_vegetarian: true },
+  { name: 'Dal Makhani & Brown Rice',  category: 'LUNCH', price_inr: 160, calories: 420, protein_g: 18, carbs_g: 64, fats_g: 11, fiber_g: 8.0, serving_weight: 400, is_vegetarian: true },
+  { name: 'Rajma Rice (High Protein)', category: 'LUNCH', price_inr: 150, calories: 450, protein_g: 20, carbs_g: 72, fats_g: 8,  fiber_g: 12.0, serving_weight: 420, is_vegetarian: true, is_vegan: true },
+  { name: 'Egg Curry with Roti',       category: 'LUNCH', price_inr: 165, calories: 430, protein_g: 26, carbs_g: 44, fats_g: 16, fiber_g: 3.0, serving_weight: 380, is_vegetarian: false },
+  { name: 'Soya Chunks Pulao',         category: 'LUNCH', price_inr: 145, calories: 410, protein_g: 24, carbs_g: 58, fats_g: 9,  fiber_g: 5.0, serving_weight: 380, is_vegetarian: true, is_vegan: true },
+  { name: 'Fish Curry & Rice',         category: 'LUNCH', price_inr: 210, calories: 460, protein_g: 38, carbs_g: 50, fats_g: 11, fiber_g: 2.5, serving_weight: 400, is_vegetarian: false },
+  { name: 'Sambar Rice Bowl',          category: 'LUNCH', price_inr: 130, calories: 380, protein_g: 14, carbs_g: 62, fats_g: 8,  fiber_g: 6.0, serving_weight: 380, is_vegetarian: true, is_vegan: true },
+
+  // DINNER
+  { name: 'Quinoa Vegetable Bowl',     category: 'DINNER', price_inr: 199, calories: 380, protein_g: 16, carbs_g: 52, fats_g: 12, fiber_g: 7.0, serving_weight: 380, is_vegetarian: true, is_vegan: true },
+  { name: 'Chicken Soup & Multigrain Bread', category: 'DINNER', price_inr: 185, calories: 320, protein_g: 30, carbs_g: 28, fats_g: 8, fiber_g: 3.0, serving_weight: 350, is_vegetarian: false },
+  { name: 'Palak Paneer & Roti',       category: 'DINNER', price_inr: 170, calories: 400, protein_g: 22, carbs_g: 42, fats_g: 17, fiber_g: 5.0, serving_weight: 360, is_vegetarian: true },
+  { name: 'Grilled Fish with Salad',   category: 'DINNER', price_inr: 220, calories: 350, protein_g: 36, carbs_g: 16, fats_g: 14, fiber_g: 4.0, serving_weight: 330, is_vegetarian: false },
+  { name: 'Moong Dal Soup & Roti',     category: 'DINNER', price_inr: 140, calories: 340, protein_g: 18, carbs_g: 48, fats_g: 8,  fiber_g: 7.0, serving_weight: 350, is_vegetarian: true, is_vegan: true },
+  { name: 'Tofu Stir Fry & Brown Rice',category: 'DINNER', price_inr: 180, calories: 390, protein_g: 20, carbs_g: 54, fats_g: 12, fiber_g: 5.0, serving_weight: 380, is_vegetarian: true, is_vegan: true },
+
+  // SNACK
+  { name: 'Sprouts Chaat',             category: 'SNACK', price_inr: 65,  calories: 180, protein_g: 11, carbs_g: 28, fats_g: 3,  fiber_g: 6.0, serving_weight: 200, is_vegetarian: true, is_vegan: true },
+  { name: 'Boiled Egg (2) & Nuts',     category: 'SNACK', price_inr: 80,  calories: 220, protein_g: 16, carbs_g: 5,  fats_g: 15, fiber_g: 1.5, serving_weight: 150, is_vegetarian: false },
+  { name: 'Fruit & Nut Mix',           category: 'SNACK', price_inr: 90,  calories: 200, protein_g: 5,  carbs_g: 28, fats_g: 9,  fiber_g: 3.0, serving_weight: 120, is_vegetarian: true, is_vegan: true },
+  { name: 'Roasted Chana Bowl',        category: 'SNACK', price_inr: 55,  calories: 190, protein_g: 10, carbs_g: 30, fats_g: 4,  fiber_g: 8.0, serving_weight: 100, is_vegetarian: true, is_vegan: true },
+  { name: 'Whey Protein Smoothie',     category: 'SNACK', price_inr: 120, calories: 250, protein_g: 26, carbs_g: 24, fats_g: 4,  fiber_g: 1.0, serving_weight: 350, is_vegetarian: true },
+];
+
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Seed foods
+  // Seed foods — createMany with skipDuplicates is faster than individual upserts
   console.log(`\n📦 Seeding ${FOODS.length} Indian foods...`);
-  let foodCount = 0;
-  for (const food of FOODS) {
-    await prisma.food.upsert({
-      where: { name: food.name },
-      update: food,
-      create: food,
-    }).catch(() => {}); // skip unique constraint issues on re-seed
-    foodCount++;
-  }
-  console.log(`   ✅ ${foodCount} foods seeded`);
+  const foodResult = await prisma.food.createMany({ data: FOODS, skipDuplicates: true });
+  console.log(`   ✅ ${foodResult.count} new foods inserted (duplicates skipped)`);
 
   // Seed achievements
   console.log(`\n🏆 Seeding ${ACHIEVEMENTS.length} achievements...`);
-  for (const ach of ACHIEVEMENTS) {
-    await prisma.achievement.upsert({
-      where: { code: ach.code },
-      update: ach,
-      create: ach,
-    });
-  }
-  console.log(`   ✅ ${ACHIEVEMENTS.length} achievements seeded`);
+  const achResult = await prisma.achievement.createMany({ data: ACHIEVEMENTS, skipDuplicates: true });
+  console.log(`   ✅ ${achResult.count} achievements inserted`);
 
   // Seed cloud kitchen
   console.log('\n🍳 Seeding sample cloud kitchen...');
-  await prisma.cloudKitchen.upsert({
-    where: { name: SAMPLE_KITCHEN.name },
-    update: SAMPLE_KITCHEN,
-    create: SAMPLE_KITCHEN,
-  }).catch(() => {});
+  await prisma.cloudKitchen.createMany({ data: [SAMPLE_KITCHEN], skipDuplicates: true });
   console.log('   ✅ Cloud kitchen seeded');
 
-  // Seed GPS segments (Bangalore popular running routes)
-  const SEGMENTS = [
-    { name: 'Cubbon Park Loop', city: 'Bangalore', start_lat: 12.9716, start_lng: 77.5946, end_lat: 12.9716, end_lng: 77.5946, distance_km: 3.2, elevation_m: 0 },
-    { name: 'Lalbagh Morning Sprint', city: 'Bangalore', start_lat: 12.9507, start_lng: 77.5848, end_lat: 12.9507, end_lng: 77.5848, distance_km: 2.8, elevation_m: 5 },
-    { name: 'Ulsoor Lake Lap', city: 'Bangalore', start_lat: 12.9819, start_lng: 77.6198, end_lat: 12.9819, end_lng: 77.6198, distance_km: 2.4, elevation_m: 0 },
-    { name: 'Nandi Hills Trek (Base to Summit)', city: 'Nandi Hills', start_lat: 13.3617, start_lng: 77.6836, end_lat: 13.3700, end_lng: 77.6872, distance_km: 3.5, elevation_m: 450 },
-    { name: 'Skandagiri Night Trek', city: 'Chikballapur', start_lat: 13.4396, start_lng: 77.6770, end_lat: 13.4450, end_lng: 77.6810, distance_km: 4.0, elevation_m: 500 },
-  ];
-
+  // Seed GPS segments
   console.log('\n🏃 Seeding running segments...');
-  for (const seg of SEGMENTS) {
-    await prisma.segment.upsert({
-      where: { name: seg.name },
-      update: seg,
-      create: seg,
-    }).catch(() => {});
-  }
-  console.log(`   ✅ ${SEGMENTS.length} segments seeded`);
+  const segResult = await prisma.segment.createMany({ data: SEGMENTS, skipDuplicates: true });
+  console.log(`   ✅ ${segResult.count} segments inserted`);
+
+  // Seed kitchen meals
+  console.log('\n🍽️  Seeding kitchen meals menu...');
+  const mealsResult = await prisma.kitchenMeal.createMany({ data: KITCHEN_MEALS, skipDuplicates: true });
+  console.log(`   ✅ ${mealsResult.count} kitchen meals inserted`);
 
   const foodTotal  = await prisma.food.count();
   const achTotal   = await prisma.achievement.count();
@@ -210,10 +227,12 @@ async function main() {
   const segTotal   = await prisma.segment.count();
 
   console.log('\n🎉 Seed complete!');
-  console.log(`   Foods:        ${foodTotal}`);
-  console.log(`   Achievements: ${achTotal}`);
-  console.log(`   Kitchens:     ${kitchTotal}`);
-  console.log(`   Segments:     ${segTotal}`);
+  const mealsTotal = await prisma.kitchenMeal.count();
+  console.log(`   Foods:         ${foodTotal}`);
+  console.log(`   Kitchen Meals: ${mealsTotal}`);
+  console.log(`   Achievements:  ${achTotal}`);
+  console.log(`   Kitchens:      ${kitchTotal}`);
+  console.log(`   Segments:      ${segTotal}`);
 }
 
 main()

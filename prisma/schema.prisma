@@ -292,7 +292,7 @@ model ExerciseLog {
 // GPS Segments for running/trekking
 model Segment {
   id          String   @id @default(uuid())
-  name        String
+  name        String   @unique
   city        String
   start_lat   Float
   start_lng   Float
@@ -332,7 +332,7 @@ model SegmentTime {
 
 model Food {
   id              String   @id @default(uuid())
-  name            String
+  name            String   @unique
   name_kannada    String?
   category        String   // GRAIN, PROTEIN, VEGETABLE, FRUIT, DAIRY, FAT, BEVERAGE, SPICE
   barcode         String?  @unique
@@ -498,7 +498,7 @@ model MealPlanItem {
 
 model CloudKitchen {
   id                     String   @id @default(uuid())
-  name                   String
+  name                   String   @unique
   city                   String
   address                String
   lat                    Float

@@ -392,6 +392,20 @@ html, body {
 .empty-icon { font-size: 48px; margin-bottom: 12px; }
 .empty-text { font-size: 14px; line-height: 1.6; }
 
+
+/* ── CART FAB ──────────────────────────────────────── */
+.cart-fab {
+  position: fixed; bottom: calc(72px + var(--safe-bot)); right: 16px;
+  background: var(--accent2); color: #fff; border: none;
+  border-radius: 28px; padding: 12px 20px;
+  font-family: var(--font-head); font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 4px 20px rgba(255,107,53,.5);
+  cursor: pointer; z-index: 30;
+  transition: all .2s; letter-spacing: .3px;
+  opacity: 0; pointer-events: none; transform: translateY(10px);
+}
+.cart-fab.visible { opacity: 1; pointer-events: auto; transform: none; }
 /* ── LOADING SPINNER ────────────────────────────────── */
 .spinner {
   width: 20px; height: 20px; border: 2px solid rgba(255,255,255,.2);
@@ -644,6 +658,45 @@ html, body {
       </div>
     </div>
 
+    <!-- ── KITCHEN TAB ──────────────────────────────── -->
+    <div class="tab-view" id="tab-kitchen">
+      <div style="padding-top:16px;">
+
+        <!-- Kitchen hero banner -->
+        <div style="background:linear-gradient(135deg,#1a100d,#160e0a);border:1px solid #3a1a0a;border-radius:var(--radius);padding:20px;margin-bottom:16px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;background:radial-gradient(circle,rgba(255,107,53,.2) 0%,transparent 70%);pointer-events:none;"></div>
+          <div style="font-family:var(--font-head);font-size:22px;font-weight:800;color:#ff6b35;margin-bottom:4px;">🍽️ FitFuel Kitchen</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Fresh · Nutritious · Macro-tracked</div>
+          <div id="kitchen-status-badge" style="display:inline-flex;align-items:center;gap:6px;background:rgba(46,204,113,.15);border:1px solid rgba(46,204,113,.3);border-radius:20px;padding:4px 12px;font-size:12px;font-family:var(--font-head);font-weight:700;color:var(--success);">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--success);"></span> Loading...
+          </div>
+        </div>
+
+        <!-- Menu filter chips -->
+        <div class="chips" id="kitchen-filter-chips">
+          <div class="chip active" onclick="Kitchen.filter('ALL')">All</div>
+          <div class="chip" onclick="Kitchen.filter('BREAKFAST')">🍳 Breakfast</div>
+          <div class="chip" onclick="Kitchen.filter('LUNCH')">🥘 Lunch</div>
+          <div class="chip" onclick="Kitchen.filter('DINNER')">🌙 Dinner</div>
+          <div class="chip" onclick="Kitchen.filter('SNACK')">🍎 Snack</div>
+          <div class="chip" onclick="Kitchen.filterVeg(true)">🌿 Veg Only</div>
+        </div>
+
+        <!-- Menu grid -->
+        <div id="kitchen-meals-grid"></div>
+
+        <!-- My Orders section -->
+        <div class="section-head" style="margin-top:8px;">
+          <div class="section-title">My Orders</div>
+          <div class="section-action" onclick="Kitchen.loadOrders()">Refresh</div>
+        </div>
+        <div id="my-orders-list">
+          <div class="empty"><div class="empty-icon">📦</div><div class="empty-text">No orders yet.</div></div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- ── NUTRITION TAB ──────────────────────────────── -->
     <div class="tab-view" id="tab-nutrition">
       <div style="padding-top:16px;">
@@ -697,6 +750,9 @@ html, body {
     <button class="nav-item" id="nav-meals" onclick="UI.showTab('meals')">
       <span class="nav-icon">🍽️</span><span>Meals</span>
     </button>
+    <button class="nav-item" id="nav-kitchen" onclick="UI.showTab('kitchen')">
+      <span class="nav-icon">🍽️</span><span>Kitchen</span>
+    </button>
     <button class="nav-item" id="nav-nutrition" onclick="UI.showTab('nutrition')">
       <span class="nav-icon">🧬</span><span>Nutrients</span>
     </button>
@@ -744,6 +800,7 @@ html, body {
   </div>
 </div>
 
+<button class="cart-fab" id="cart-fab" onclick="Kitchen.checkout()">🛒 Checkout <span id="cart-total"></span></button>
 <div id="toast-container"></div>
 
 <script>
@@ -843,6 +900,7 @@ const UI = {
     if (tab === 'meals') Meal.loadToday();
     if (tab === 'profile') Profile.load();
     if (tab === 'nutrition') Nutrition.loadToday();
+    if (tab === 'kitchen') Kitchen.load();
   },
 
   authTab(tab) {
@@ -1789,6 +1847,286 @@ const Nutrition = {
         </div>`).join('');
     } else {
       document.getElementById('top-foods-list').innerHTML = '<div class="empty"><div class="empty-text">Log meals to see top foods</div></div>';
+    }
+  },
+};
+
+
+// ─────────────────────────────────────────────────────────
+// KITCHEN
+// ─────────────────────────────────────────────────────────
+const Kitchen = {
+  meals:      [],
+  cart:       [],
+  filter_cat: 'ALL',
+  filter_veg: false,
+  kitchenId:  null,
+
+  async load() {
+    await Promise.all([Kitchen.loadStatus(), Kitchen.loadMeals(), Kitchen.loadOrders()]);
+  },
+
+  async loadStatus() {
+    try {
+      const res = await api('GET', '/kitchens?city=Bangalore');
+      if (res.success && res.data.kitchens.length) {
+        Kitchen.kitchenId = res.data.kitchens[0].id;
+        const statusRes = await api('GET', `/kitchens/${Kitchen.kitchenId}/status`);
+        if (statusRes.success) {
+          const s = statusRes.data;
+          const badge = document.getElementById('kitchen-status-badge');
+          if (badge) {
+            badge.innerHTML = s.is_open
+              ? `<span style="width:7px;height:7px;border-radius:50%;background:var(--success);"></span> Open · ${s.capacity_remaining} slots left`
+              : `<span style="width:7px;height:7px;border-radius:50%;background:var(--danger);"></span> Closed`;
+            badge.style.background = s.is_open ? 'rgba(46,204,113,.15)' : 'rgba(255,71,87,.15)';
+            badge.style.borderColor = s.is_open ? 'rgba(46,204,113,.3)' : 'rgba(255,71,87,.3)';
+            badge.style.color = s.is_open ? 'var(--success)' : 'var(--danger)';
+          }
+        }
+      }
+    } catch {}
+  },
+
+  async loadMeals() {
+    try {
+      const params = new URLSearchParams();
+      if (Kitchen.filter_cat !== 'ALL') params.set('category', Kitchen.filter_cat);
+      if (Kitchen.filter_veg) params.set('vegetarian', 'true');
+
+      const res = await api('GET', '/kitchen-meals' + (params.toString() ? '?' + params : ''));
+      Kitchen.meals = res.data?.meals || [];
+      Kitchen.renderMeals();
+    } catch {}
+  },
+
+  filter(cat) {
+    Kitchen.filter_cat = cat;
+    Kitchen.filter_veg = false;
+    document.querySelectorAll('#kitchen-filter-chips .chip').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    Kitchen.loadMeals();
+  },
+
+  filterVeg(on) {
+    Kitchen.filter_veg = on;
+    Kitchen.filter_cat = 'ALL';
+    document.querySelectorAll('#kitchen-filter-chips .chip').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    Kitchen.loadMeals();
+  },
+
+  renderMeals() {
+    const grid = document.getElementById('kitchen-meals-grid');
+    if (!Kitchen.meals.length) {
+      grid.innerHTML = '<div class="empty"><div class="empty-icon">🍽️</div><div class="empty-text">No meals available.</div></div>';
+      return;
+    }
+
+    const catEmoji = { BREAKFAST:'🍳', LUNCH:'🥘', DINNER:'🌙', SNACK:'🍎' };
+    const catOrder = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'];
+
+    // Group by category in order
+    const grouped = Kitchen.meals.reduce((acc, m) => {
+      if (!acc[m.category]) acc[m.category] = [];
+      acc[m.category].push(m);
+      return acc;
+    }, {});
+
+    let html = '';
+    for (const cat of catOrder) {
+      if (!grouped[cat] || !grouped[cat].length) continue;
+      const inCart = Kitchen.cart.reduce((s, c) => s + (grouped[cat]?.find(m => m.id === c.id) ? c.qty : 0), 0);
+      html += `
+        <div style="font-family:var(--font-head);font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:16px 0 10px;">${catEmoji[cat] || ''} ${cat}</div>
+        ${grouped[cat].map(m => Kitchen.mealCard(m)).join('')}
+      `;
+    }
+    grid.innerHTML = html;
+  },
+
+  mealCard(m) {
+    const inCart = Kitchen.cart.find(c => c.id === m.id);
+    const stars = '⭐'.repeat(Math.round(m.avg_rating || 0));
+    return `
+      <div class="card" style="padding:16px;margin-bottom:10px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:15px;margin-bottom:3px;">${m.name}</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">
+              ${m.is_vegetarian ? '🌿 Veg' : '🍗 Non-veg'} · ${m.serving_weight}g · ${m.avg_rating ? m.avg_rating + ' ⭐ (' + m.review_count + ')' : 'No reviews yet'}
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:10px;">
+              <div style="text-align:center;">
+                <div style="font-family:var(--font-head);font-weight:800;font-size:16px;color:var(--accent);">${m.calories}</div>
+                <div style="font-size:10px;color:var(--muted);">kcal</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-family:var(--font-head);font-weight:800;font-size:16px;color:var(--accent3);">${m.protein_g}g</div>
+                <div style="font-size:10px;color:var(--muted);">protein</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-family:var(--font-head);font-weight:800;font-size:16px;color:#f39c12;">${m.carbs_g}g</div>
+                <div style="font-size:10px;color:var(--muted);">carbs</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-family:var(--font-head);font-weight:800;font-size:16px;color:#e74c3c;">${m.fats_g}g</div>
+                <div style="font-size:10px;color:var(--muted);">fats</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-family:var(--font-head);font-weight:800;font-size:18px;color:#ff6b35;">₹${m.price_inr}</div>
+          ${inCart
+            ? `<div style="display:flex;align-items:center;gap:10px;">
+                <button onclick="Kitchen.removeFromCart('${m.id}')" style="width:32px;height:32px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>
+                <span style="font-family:var(--font-head);font-weight:700;font-size:16px;">${inCart.qty}</span>
+                <button onclick="Kitchen.addToCart('${m.id}','${m.name.replace(/'/g,"\'")}',${m.price_inr},'${m.category}')" style="width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;color:#0d0d0d;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>
+               </div>`
+            : `<button onclick="Kitchen.addToCart('${m.id}','${m.name.replace(/'/g,"\'")}',${m.price_inr},'${m.category}')" style="padding:8px 18px;background:var(--accent2);border:none;border-radius:8px;color:#fff;font-family:var(--font-head);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.3px;">ADD</button>`
+          }
+        </div>
+      </div>`;
+  },
+
+  addToCart(id, name, price, category) {
+    const existing = Kitchen.cart.find(c => c.id === id);
+    if (existing) { existing.qty++; }
+    else { Kitchen.cart.push({ id, name, price, category, qty: 1 }); }
+    Kitchen.renderMeals();
+    Kitchen.updateCartBadge();
+  },
+
+  removeFromCart(id) {
+    const idx = Kitchen.cart.findIndex(c => c.id === id);
+    if (idx === -1) return;
+    if (Kitchen.cart[idx].qty > 1) { Kitchen.cart[idx].qty--; }
+    else { Kitchen.cart.splice(idx, 1); }
+    Kitchen.renderMeals();
+    Kitchen.updateCartBadge();
+  },
+
+  updateCartBadge() {
+    const total = Kitchen.cart.reduce((s, c) => s + c.qty, 0);
+    const inr   = Kitchen.cart.reduce((s, c) => s + c.price * c.qty, 0);
+    const nav = document.getElementById('nav-kitchen');
+    if (nav) nav.querySelector('.nav-icon').textContent = total > 0 ? `🛒 ${total}` : '🍽️';
+    const fab = document.getElementById('cart-fab');
+    if (fab) {
+      fab.classList.toggle('visible', total > 0 && State.currentTab === 'kitchen');
+      document.getElementById('cart-total').textContent = total > 0 ? `₹${inr}` : '';
+    }
+  },
+
+  async checkout() {
+    if (!Kitchen.cart.length) return Toast.show('Cart is empty', 'error');
+    if (!Kitchen.kitchenId)   return Toast.show('Kitchen not available', 'error');
+
+    const address = prompt('Delivery address (or press Cancel for pickup):');
+    if (address === null) return; // user cancelled
+
+    const items = Kitchen.cart.map(c => ({
+      kitchen_meal_id: c.id,
+      quantity: c.qty,
+      meal_type: c.category === 'BREAKFAST' ? 'BREAKFAST' : c.category === 'DINNER' ? 'DINNER' : c.category === 'SNACK' ? 'SNACK' : 'LUNCH',
+    }));
+
+    const total = Kitchen.cart.reduce((s, c) => s + c.price * c.qty, 0);
+
+    try {
+      const res = await api('POST', '/orders', {
+        kitchen_id: Kitchen.kitchenId,
+        items,
+        delivery_address: address || 'Pickup from kitchen',
+        total_inr: total,
+      });
+      if (res.success) {
+        Toast.show(`✅ Order placed! ₹${total}. ETA 45 min.`, 'success');
+        Kitchen.cart = [];
+        Kitchen.renderMeals();
+        Kitchen.updateCartBadge();
+        Kitchen.loadOrders();
+      }
+    } catch (e) {
+      Toast.show(e.message, 'error');
+    }
+  },
+
+  async loadOrders() {
+    try {
+      const res = await api('GET', '/orders?limit=5');
+      const orders = res.data?.orders || [];
+      const el = document.getElementById('my-orders-list');
+      if (!el) return;
+
+      const statusColor = { PENDING:'#f39c12', CONFIRMED:'#3498db', PREPARING:'#9b59b6', READY:'#1abc9c', OUT_FOR_DELIVERY:'#e67e22', DELIVERED:'var(--success)', CANCELLED:'var(--danger)' };
+      const statusEmoji = { PENDING:'⏳', CONFIRMED:'✅', PREPARING:'👨‍🍳', READY:'📦', OUT_FOR_DELIVERY:'🛵', DELIVERED:'🎉', CANCELLED:'❌' };
+
+      if (!orders.length) {
+        el.innerHTML = '<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">No orders yet.</div></div>';
+        return;
+      }
+
+      el.innerHTML = orders.map(o => `
+        <div class="card" style="padding:14px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div>
+              <div style="font-weight:600;font-size:14px;">${o.kitchen?.name || 'FitFuel Kitchen'}</div>
+              <div style="font-size:12px;color:var(--muted);">${o.order_items?.map(i => i.kitchen_meal?.name).join(', ').slice(0,50)}...</div>
+            </div>
+            <div style="font-family:var(--font-head);font-weight:800;color:#ff6b35;">₹${o.total_inr}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span>${statusEmoji[o.status]}</span>
+              <span style="font-size:12px;font-family:var(--font-head);font-weight:700;color:${statusColor[o.status] || 'var(--muted)'};">${o.status?.replace(/_/g,' ')}</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              ${o.status === 'DELIVERED' ? `<button onclick="Kitchen.autoLog('${o.id}')" style="padding:6px 12px;background:rgba(78,205,196,.15);border:1px solid rgba(78,205,196,.3);border-radius:6px;color:var(--accent3);font-size:11px;font-family:var(--font-head);font-weight:700;cursor:pointer;">Log Nutrition</button>` : ''}
+              ${['PENDING','CONFIRMED','PREPARING','READY','OUT_FOR_DELIVERY'].includes(o.status) ? `<button onclick="Kitchen.trackOrder('${o.id}')" style="padding:6px 12px;background:rgba(232,245,78,.1);border:1px solid rgba(232,245,78,.2);border-radius:6px;color:var(--accent);font-size:11px;font-family:var(--font-head);font-weight:700;cursor:pointer;">Track</button>` : ''}
+            </div>
+          </div>
+        </div>`).join('');
+    } catch {}
+  },
+
+  async trackOrder(orderId) {
+    try {
+      const res = await api('GET', `/orders/${orderId}/track`);
+      if (res.success) {
+        const t = res.data;
+        Toast.show(`${t.message} — ETA ${t.eta_minutes ? t.eta_minutes + ' min' : 'Delivered!'}`, 'info');
+      }
+    } catch {}
+  },
+
+  async autoLog(orderId) {
+    try {
+      const orderRes = await api('GET', `/orders/${orderId}`);
+      if (!orderRes.success) return;
+
+      const items = orderRes.data.order.order_items;
+      if (!items.length) return;
+
+      // Log each item
+      let totalCal = 0, totalProt = 0;
+      for (const item of items) {
+        const res = await api('POST', '/nutrition/auto-log', {
+          order_id: orderId,
+          meal_id: item.kitchen_meal_id,
+          meal_type: item.meal_type,
+        });
+        if (res.success) {
+          totalCal += res.data.nutrition?.calories || 0;
+          totalProt += res.data.nutrition?.protein_g || 0;
+        }
+      }
+
+      Toast.show(`✅ ${items.length} meal(s) logged! ${totalCal.toFixed(0)} kcal · ${totalProt.toFixed(0)}g protein`, 'success');
+      if (State.currentTab === 'dashboard') Dashboard.load();
+    } catch (e) {
+      Toast.show(e.message || 'Log failed', 'error');
     }
   },
 };
