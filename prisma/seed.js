@@ -1,0 +1,221 @@
+// prisma/seed.js
+'use strict';
+
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+// ─── 100+ Indian Foods (all values per 100g / 100ml RAW) ─────────────────────
+const FOODS = [
+  // ── GRAINS & CEREALS ──────────────────────────────────────────────────────
+  { name: 'Rice (Raw)',        name_kannada: 'ಅಕ್ಕಿ',       category: 'GRAIN',   calories: 356, protein_g: 7.0, carbs_g: 79.0, fats_g: 0.5, fiber_g: 0.4, calcium_mg: 10,  iron_mg: 0.8, cooking_factor: 0.43 },
+  { name: 'Wheat Flour (Atta)',name_kannada: 'ಗೋಧಿ ಹಿಟ್ಟು', category: 'GRAIN',   calories: 341, protein_g: 11.8, carbs_g: 71.2, fats_g: 1.5, fiber_g: 1.9, calcium_mg: 41, iron_mg: 3.0, cooking_factor: 1.0 },
+  { name: 'Oats',              name_kannada: 'ಓಟ್ಸ್',       category: 'GRAIN',   calories: 389, protein_g: 16.9, carbs_g: 66.3, fats_g: 6.9, fiber_g: 10.6, calcium_mg: 54, iron_mg: 4.7, cooking_factor: 2.5 },
+  { name: 'Chapati',           name_kannada: 'ಚಪಾತಿ',       category: 'GRAIN',   calories: 297, protein_g: 8.0, carbs_g: 52.0, fats_g: 7.0, fiber_g: 2.0, calcium_mg: 75,  iron_mg: 2.0, cooking_factor: 1.0 },
+  { name: 'Idli',              name_kannada: 'ಇಡ್ಲಿ',       category: 'GRAIN',   calories: 154, protein_g: 3.9, carbs_g: 30.0, fats_g: 0.8, fiber_g: 0.4, calcium_mg: 15,  iron_mg: 0.7, cooking_factor: 1.0 },
+  { name: 'Dosa Batter',       name_kannada: 'ದೋಸೆ ಹಿಟ್ಟು', category: 'GRAIN',   calories: 110, protein_g: 3.0, carbs_g: 22.0, fats_g: 1.0, fiber_g: 0.5, calcium_mg: 20,  iron_mg: 0.6, cooking_factor: 1.0 },
+  { name: 'Poha',              name_kannada: 'ಅವಲಕ್ಕಿ',     category: 'GRAIN',   calories: 352, protein_g: 6.0, carbs_g: 77.0, fats_g: 0.6, fiber_g: 0.4, calcium_mg: 14,  iron_mg: 2.7, cooking_factor: 2.0 },
+  { name: 'Upma Rava',         name_kannada: 'ಉಪ್ಮಾ ರವೆ',   category: 'GRAIN',   calories: 350, protein_g: 9.7, carbs_g: 73.0, fats_g: 1.5, fiber_g: 2.0, calcium_mg: 20,  iron_mg: 2.1, cooking_factor: 2.5 },
+  { name: 'Ragi Flour',        name_kannada: 'ರಾಗಿ ಹಿಟ್ಟು', category: 'GRAIN',   calories: 336, protein_g: 7.3, carbs_g: 72.0, fats_g: 1.5, fiber_g: 3.6, calcium_mg: 344, iron_mg: 3.9, cooking_factor: 1.0 },
+  { name: 'Quinoa',                                           category: 'GRAIN',   calories: 368, protein_g: 14.1, carbs_g: 64.2, fats_g: 6.1, fiber_g: 7.0, calcium_mg: 47, iron_mg: 4.6, cooking_factor: 2.5 },
+  { name: 'Brown Rice (Raw)',                                 category: 'GRAIN',   calories: 362, protein_g: 7.5, carbs_g: 75.5, fats_g: 2.9, fiber_g: 3.5, calcium_mg: 23,  iron_mg: 1.5, cooking_factor: 0.43 },
+  { name: 'Bajra Flour',       name_kannada: 'ಸಜ್ಜೆ ಹಿಟ್ಟು', category: 'GRAIN',  calories: 361, protein_g: 11.6, carbs_g: 67.5, fats_g: 5.0, fiber_g: 1.2, calcium_mg: 42, iron_mg: 16.9, cooking_factor: 1.0 },
+  { name: 'Bread (White)',                                    category: 'GRAIN',   calories: 265, protein_g: 9.0, carbs_g: 49.0, fats_g: 3.2, fiber_g: 2.7, calcium_mg: 260, iron_mg: 2.5, cooking_factor: 1.0 },
+  { name: 'Cornflakes',                                       category: 'GRAIN',   calories: 357, protein_g: 7.5, carbs_g: 84.0, fats_g: 0.4, fiber_g: 0.9, calcium_mg: 0,   iron_mg: 14.0, cooking_factor: 1.0 },
+
+  // ── LENTILS & LEGUMES ──────────────────────────────────────────────────────
+  { name: 'Dal (Toor/Arhar)',  name_kannada: 'ತೊಗರಿ ಬೇಳೆ',  category: 'LEGUME',  calories: 335, protein_g: 22.3, carbs_g: 57.6, fats_g: 1.7, fiber_g: 15.0, calcium_mg: 73, iron_mg: 5.8, cooking_factor: 2.5 },
+  { name: 'Moong Dal',         name_kannada: 'ಹೆಸರು ಬೇಳೆ',  category: 'LEGUME',  calories: 347, protein_g: 24.0, carbs_g: 59.9, fats_g: 1.2, fiber_g: 16.3, calcium_mg: 75, iron_mg: 6.7, cooking_factor: 2.5 },
+  { name: 'Chana Dal',         name_kannada: 'ಕಡಲೆ ಬೇಳೆ',   category: 'LEGUME',  calories: 360, protein_g: 20.5, carbs_g: 59.8, fats_g: 5.0, fiber_g: 8.0, calcium_mg: 100, iron_mg: 5.3, cooking_factor: 2.5 },
+  { name: 'Masoor Dal (Red Lentil)', name_kannada: 'ಮಸೂರ್ ಬೇಳೆ', category: 'LEGUME', calories: 352, protein_g: 25.8, carbs_g: 59.0, fats_g: 1.1, fiber_g: 11.0, calcium_mg: 51, iron_mg: 7.6, cooking_factor: 2.5 },
+  { name: 'Rajma (Kidney Beans)', name_kannada: 'ರಾಜ್ಮಾ',   category: 'LEGUME',  calories: 333, protein_g: 22.9, carbs_g: 60.0, fats_g: 1.5, fiber_g: 24.9, calcium_mg: 143, iron_mg: 8.2, cooking_factor: 2.5 },
+  { name: 'Chickpeas (Kabuli Chana)', name_kannada: 'ಕಡಲೆ', category: 'LEGUME',  calories: 364, protein_g: 19.3, carbs_g: 60.7, fats_g: 6.0, fiber_g: 17.4, calcium_mg: 105, iron_mg: 6.2, cooking_factor: 2.5 },
+  { name: 'Black Urad Dal',    name_kannada: 'ಉದ್ದು ಬೇಳೆ',  category: 'LEGUME',  calories: 347, protein_g: 25.2, carbs_g: 59.0, fats_g: 1.4, fiber_g: 15.0, calcium_mg: 138, iron_mg: 7.3, cooking_factor: 2.5 },
+  { name: 'Soybean',                                          category: 'LEGUME',  calories: 446, protein_g: 36.5, carbs_g: 30.2, fats_g: 19.9, fiber_g: 9.3, calcium_mg: 277, iron_mg: 15.7, cooking_factor: 2.0 },
+  { name: 'Peas (Fresh)',      name_kannada: 'ಬಟಾಣಿ',        category: 'LEGUME',  calories: 81,  protein_g: 5.4, carbs_g: 14.5, fats_g: 0.4, fiber_g: 5.1, calcium_mg: 25,  iron_mg: 1.5, cooking_factor: 1.0 },
+
+  // ── PROTEINS ──────────────────────────────────────────────────────────────
+  { name: 'Chicken Breast (Raw)',                             category: 'PROTEIN', calories: 165, protein_g: 31.0, carbs_g: 0.0, fats_g: 3.6, fiber_g: 0.0, calcium_mg: 15,  iron_mg: 1.0, cooking_factor: 0.75 },
+  { name: 'Chicken Thigh (Raw)',                              category: 'PROTEIN', calories: 177, protein_g: 25.1, carbs_g: 0.0, fats_g: 7.9, fiber_g: 0.0, calcium_mg: 12,  iron_mg: 1.3, cooking_factor: 0.75 },
+  { name: 'Egg (Whole)',       name_kannada: 'ಮೊಟ್ಟೆ',       category: 'PROTEIN', calories: 143, protein_g: 12.6, carbs_g: 0.7, fats_g: 9.5, fiber_g: 0.0, calcium_mg: 56,  iron_mg: 1.8, cooking_factor: 1.0, default_unit: 'PIECES' },
+  { name: 'Egg White',                                        category: 'PROTEIN', calories: 52,  protein_g: 10.9, carbs_g: 0.7, fats_g: 0.2, fiber_g: 0.0, calcium_mg: 7,   iron_mg: 0.1, cooking_factor: 1.0 },
+  { name: 'Fish (Rohu)',       name_kannada: 'ರೋಹು ಮೀನು',   category: 'PROTEIN', calories: 97,  protein_g: 16.6, carbs_g: 0.0, fats_g: 2.7, fiber_g: 0.0, calcium_mg: 650, iron_mg: 1.0, cooking_factor: 0.75 },
+  { name: 'Fish (Pomfret)',    name_kannada: 'ಪಾಂಫ್ರೆಟ್',   category: 'PROTEIN', calories: 96,  protein_g: 17.4, carbs_g: 0.0, fats_g: 2.4, fiber_g: 0.0, calcium_mg: 200, iron_mg: 1.1, cooking_factor: 0.75 },
+  { name: 'Mutton (Goat)',     name_kannada: 'ಆಡು ಮಾಂಸ',    category: 'PROTEIN', calories: 218, protein_g: 17.1, carbs_g: 0.0, fats_g: 16.7, fiber_g: 0.0, calcium_mg: 12,  iron_mg: 2.7, cooking_factor: 0.65 },
+  { name: 'Paneer',            name_kannada: 'ಪನೀರ್',        category: 'PROTEIN', calories: 265, protein_g: 18.3, carbs_g: 1.2, fats_g: 20.8, fiber_g: 0.0, calcium_mg: 480, iron_mg: 0.5, cooking_factor: 1.0 },
+  { name: 'Tofu',              name_kannada: 'ಟೋಫು',          category: 'PROTEIN', calories: 144, protein_g: 17.3, carbs_g: 2.8, fats_g: 8.7, fiber_g: 2.3, calcium_mg: 350, iron_mg: 2.7, cooking_factor: 1.0 },
+  { name: 'Tuna (Canned)',                                    category: 'PROTEIN', calories: 116, protein_g: 25.5, carbs_g: 0.0, fats_g: 0.8, fiber_g: 0.0, calcium_mg: 10,  iron_mg: 1.3, cooking_factor: 1.0 },
+  { name: 'Whey Protein (scoop)',                             category: 'PROTEIN', calories: 380, protein_g: 80.0, carbs_g: 8.0, fats_g: 4.0, fiber_g: 0.0, calcium_mg: 600, iron_mg: 1.0, cooking_factor: 1.0 },
+
+  // ── DAIRY ─────────────────────────────────────────────────────────────────
+  { name: 'Milk (Full Fat)',   name_kannada: 'ಹಾಲು',          category: 'DAIRY',   calories: 61,  protein_g: 3.2, carbs_g: 4.8, fats_g: 3.3, fiber_g: 0.0, calcium_mg: 120, iron_mg: 0.1, cooking_factor: 1.0, default_unit: 'ML' },
+  { name: 'Milk (Toned)',      name_kannada: 'ಟೋಂಡ್ ಹಾಲು',   category: 'DAIRY',   calories: 42,  protein_g: 3.3, carbs_g: 4.7, fats_g: 1.5, fiber_g: 0.0, calcium_mg: 120, iron_mg: 0.1, cooking_factor: 1.0, default_unit: 'ML' },
+  { name: 'Curd / Yogurt',     name_kannada: 'ಮೊಸರು',         category: 'DAIRY',   calories: 61,  protein_g: 3.5, carbs_g: 4.7, fats_g: 3.3, fiber_g: 0.0, calcium_mg: 120, iron_mg: 0.1, cooking_factor: 1.0 },
+  { name: 'Greek Yogurt',                                     category: 'DAIRY',   calories: 100, protein_g: 10.0, carbs_g: 3.6, fats_g: 5.0, fiber_g: 0.0, calcium_mg: 111, iron_mg: 0.1, cooking_factor: 1.0 },
+  { name: 'Cheese (Cheddar)',                                 category: 'DAIRY',   calories: 402, protein_g: 25.0, carbs_g: 1.3, fats_g: 33.1, fiber_g: 0.0, calcium_mg: 721, iron_mg: 0.7, cooking_factor: 1.0 },
+  { name: 'Butter',            name_kannada: 'ಬೆಣ್ಣೆ',        category: 'DAIRY',   calories: 717, protein_g: 0.9, carbs_g: 0.1, fats_g: 81.1, fiber_g: 0.0, calcium_mg: 24,  iron_mg: 0.0, cooking_factor: 1.0, default_unit: 'TBSP' },
+
+  // ── VEGETABLES ────────────────────────────────────────────────────────────
+  { name: 'Spinach',           name_kannada: 'ಪಾಲಕ್',         category: 'VEGETABLE', calories: 23, protein_g: 2.9, carbs_g: 3.6, fats_g: 0.4, fiber_g: 2.2, calcium_mg: 99, iron_mg: 2.7, vitamin_c_mg: 28, cooking_factor: 0.3 },
+  { name: 'Broccoli',                                          category: 'VEGETABLE', calories: 34, protein_g: 2.8, carbs_g: 6.6, fats_g: 0.4, fiber_g: 2.6, calcium_mg: 47, iron_mg: 0.7, vitamin_c_mg: 89, cooking_factor: 0.9 },
+  { name: 'Carrot',            name_kannada: 'ಗಾಜರ್',          category: 'VEGETABLE', calories: 41, protein_g: 0.9, carbs_g: 9.6, fats_g: 0.2, fiber_g: 2.8, calcium_mg: 33, iron_mg: 0.3, vitamin_c_mg: 6, cooking_factor: 1.0 },
+  { name: 'Tomato',            name_kannada: 'ಟಮಾಟೋ',          category: 'VEGETABLE', calories: 18, protein_g: 0.9, carbs_g: 3.9, fats_g: 0.2, fiber_g: 1.2, calcium_mg: 10, iron_mg: 0.3, vitamin_c_mg: 14, cooking_factor: 1.0 },
+  { name: 'Onion',             name_kannada: 'ಈರುಳ್ಳಿ',        category: 'VEGETABLE', calories: 40, protein_g: 1.1, carbs_g: 9.3, fats_g: 0.1, fiber_g: 1.7, calcium_mg: 23, iron_mg: 0.2, vitamin_c_mg: 7, cooking_factor: 1.0 },
+  { name: 'Potato',            name_kannada: 'ಆಲೂ',            category: 'VEGETABLE', calories: 77, protein_g: 2.0, carbs_g: 17.5, fats_g: 0.1, fiber_g: 2.2, calcium_mg: 12, iron_mg: 0.8, vitamin_c_mg: 20, cooking_factor: 1.0 },
+  { name: 'Sweet Potato',                                      category: 'VEGETABLE', calories: 86, protein_g: 1.6, carbs_g: 20.1, fats_g: 0.1, fiber_g: 3.0, calcium_mg: 30, iron_mg: 0.6, vitamin_c_mg: 2, cooking_factor: 1.0 },
+  { name: 'Bitter Gourd (Karela)', name_kannada: 'ಹಾಗಲಕಾಯಿ', category: 'VEGETABLE', calories: 17, protein_g: 1.0, carbs_g: 3.7, fats_g: 0.2, fiber_g: 2.8, calcium_mg: 19, iron_mg: 0.4, vitamin_c_mg: 84, cooking_factor: 0.9 },
+  { name: 'Bottle Gourd (Lauki)', name_kannada: 'ಸೋರೆಕಾಯಿ', category: 'VEGETABLE', calories: 14, protein_g: 0.6, carbs_g: 3.4, fats_g: 0.0, fiber_g: 0.5, calcium_mg: 26, iron_mg: 0.2, vitamin_c_mg: 10, cooking_factor: 0.9 },
+  { name: 'Drumstick (Moringa)', name_kannada: 'ನುಗ್ಗೆಕಾಯಿ', category: 'VEGETABLE', calories: 37, protein_g: 2.1, carbs_g: 8.5, fats_g: 0.2, fiber_g: 3.2, calcium_mg: 30, iron_mg: 0.4, vitamin_c_mg: 141, cooking_factor: 0.9 },
+  { name: 'Cauliflower',       name_kannada: 'ಹೂ ಕೋಸು',       category: 'VEGETABLE', calories: 25, protein_g: 1.9, carbs_g: 4.9, fats_g: 0.3, fiber_g: 2.0, calcium_mg: 22, iron_mg: 0.4, vitamin_c_mg: 48, cooking_factor: 0.9 },
+  { name: 'Capsicum (Bell Pepper)', name_kannada: 'ದೊಡ್ಡ ಮೆಣಸಿನಕಾಯಿ', category: 'VEGETABLE', calories: 31, protein_g: 1.0, carbs_g: 6.0, fats_g: 0.3, fiber_g: 2.1, calcium_mg: 7, iron_mg: 0.4, vitamin_c_mg: 128, cooking_factor: 0.9 },
+  { name: 'Beans (French)',                                    category: 'VEGETABLE', calories: 31, protein_g: 1.8, carbs_g: 7.1, fats_g: 0.1, fiber_g: 3.4, calcium_mg: 37, iron_mg: 1.0, vitamin_c_mg: 12, cooking_factor: 0.9 },
+  { name: 'Cucumber',          name_kannada: 'ಸೌತೆಕಾಯಿ',      category: 'VEGETABLE', calories: 15, protein_g: 0.7, carbs_g: 3.6, fats_g: 0.1, fiber_g: 0.5, calcium_mg: 16, iron_mg: 0.3, vitamin_c_mg: 2, cooking_factor: 1.0 },
+  { name: 'Coriander Leaves',  name_kannada: 'ಕೊತ್ತಂಬರಿ',     category: 'VEGETABLE', calories: 23, protein_g: 2.1, carbs_g: 3.7, fats_g: 0.5, fiber_g: 2.8, calcium_mg: 67, iron_mg: 1.8, vitamin_c_mg: 27, cooking_factor: 1.0 },
+  { name: 'Mushroom',                                          category: 'VEGETABLE', calories: 22, protein_g: 3.1, carbs_g: 3.3, fats_g: 0.3, fiber_g: 1.0, calcium_mg: 3,  iron_mg: 0.5, cooking_factor: 0.6 },
+
+  // ── FRUITS ────────────────────────────────────────────────────────────────
+  { name: 'Banana',            name_kannada: 'ಬಾಳೆಹಣ್ಣು',     category: 'FRUIT',   calories: 89, protein_g: 1.1, carbs_g: 22.8, fats_g: 0.3, fiber_g: 2.6, calcium_mg: 5,  iron_mg: 0.3, vitamin_c_mg: 8, cooking_factor: 1.0 },
+  { name: 'Apple',             name_kannada: 'ಆಪಲ್',           category: 'FRUIT',   calories: 52, protein_g: 0.3, carbs_g: 13.8, fats_g: 0.2, fiber_g: 2.4, calcium_mg: 6,  iron_mg: 0.1, vitamin_c_mg: 5, cooking_factor: 1.0 },
+  { name: 'Mango',             name_kannada: 'ಮಾವಿನಹಣ್ಣು',   category: 'FRUIT',   calories: 60, protein_g: 0.8, carbs_g: 15.0, fats_g: 0.4, fiber_g: 1.6, calcium_mg: 10, iron_mg: 0.2, vitamin_c_mg: 36, cooking_factor: 1.0 },
+  { name: 'Orange',            name_kannada: 'ಕಿತ್ತಳೆ',        category: 'FRUIT',   calories: 47, protein_g: 0.9, carbs_g: 11.8, fats_g: 0.1, fiber_g: 2.4, calcium_mg: 40, iron_mg: 0.1, vitamin_c_mg: 53, cooking_factor: 1.0 },
+  { name: 'Papaya',            name_kannada: 'ಪಪ್ಪಾಯಿ',        category: 'FRUIT',   calories: 43, protein_g: 0.5, carbs_g: 10.8, fats_g: 0.3, fiber_g: 1.7, calcium_mg: 20, iron_mg: 0.3, vitamin_c_mg: 62, cooking_factor: 1.0 },
+  { name: 'Pomegranate',       name_kannada: 'ದಾಳಿಂಬೆ',        category: 'FRUIT',   calories: 83, protein_g: 1.7, carbs_g: 18.7, fats_g: 1.2, fiber_g: 4.0, calcium_mg: 10, iron_mg: 0.3, vitamin_c_mg: 10, cooking_factor: 1.0 },
+  { name: 'Grapes',                                            category: 'FRUIT',   calories: 69, protein_g: 0.7, carbs_g: 18.1, fats_g: 0.2, fiber_g: 0.9, calcium_mg: 10, iron_mg: 0.4, vitamin_c_mg: 11, cooking_factor: 1.0 },
+  { name: 'Watermelon',        name_kannada: 'ಕಲ್ಲಂಗಡಿ',       category: 'FRUIT',   calories: 30, protein_g: 0.6, carbs_g: 7.6, fats_g: 0.2, fiber_g: 0.4, calcium_mg: 7,  iron_mg: 0.2, vitamin_c_mg: 8, cooking_factor: 1.0 },
+  { name: 'Guava',             name_kannada: 'ಪೇರಲೆ',          category: 'FRUIT',   calories: 68, protein_g: 2.6, carbs_g: 14.3, fats_g: 1.0, fiber_g: 5.4, calcium_mg: 18, iron_mg: 0.3, vitamin_c_mg: 228, cooking_factor: 1.0 },
+  { name: 'Coconut (Fresh)',   name_kannada: 'ತಾಜಾ ತೆಂಗಿನಕಾಯಿ', category: 'FRUIT', calories: 354, protein_g: 3.3, carbs_g: 15.2, fats_g: 33.5, fiber_g: 9.0, calcium_mg: 14, iron_mg: 2.4, cooking_factor: 1.0 },
+
+  // ── NUTS & SEEDS ──────────────────────────────────────────────────────────
+  { name: 'Almonds',           name_kannada: 'ಬಾದಾಮಿ',         category: 'NUT',     calories: 579, protein_g: 21.2, carbs_g: 21.6, fats_g: 49.9, fiber_g: 12.5, calcium_mg: 264, iron_mg: 3.7, cooking_factor: 1.0 },
+  { name: 'Cashews',           name_kannada: 'ಗೇರು ಬೀಜ',      category: 'NUT',     calories: 553, protein_g: 18.2, carbs_g: 30.2, fats_g: 43.8, fiber_g: 3.3, calcium_mg: 37,  iron_mg: 6.7, cooking_factor: 1.0 },
+  { name: 'Walnuts',                                            category: 'NUT',     calories: 654, protein_g: 15.2, carbs_g: 13.7, fats_g: 65.2, fiber_g: 6.7, calcium_mg: 98,  iron_mg: 2.9, cooking_factor: 1.0 },
+  { name: 'Groundnuts (Peanuts)', name_kannada: 'ಕಡಲೆ',        category: 'NUT',     calories: 567, protein_g: 25.8, carbs_g: 16.1, fats_g: 49.2, fiber_g: 8.5, calcium_mg: 92,  iron_mg: 4.6, cooking_factor: 1.0 },
+  { name: 'Sesame Seeds',      name_kannada: 'ಎಳ್ಳು',           category: 'NUT',     calories: 573, protein_g: 17.7, carbs_g: 23.4, fats_g: 49.7, fiber_g: 11.8, calcium_mg: 975, iron_mg: 14.6, cooking_factor: 1.0 },
+  { name: 'Flaxseeds',                                          category: 'NUT',     calories: 534, protein_g: 18.3, carbs_g: 28.9, fats_g: 42.2, fiber_g: 27.3, calcium_mg: 255, iron_mg: 5.7, cooking_factor: 1.0 },
+  { name: 'Chia Seeds',                                         category: 'NUT',     calories: 486, protein_g: 16.5, carbs_g: 42.1, fats_g: 30.7, fiber_g: 34.4, calcium_mg: 631, iron_mg: 7.7, cooking_factor: 1.0 },
+
+  // ── FATS & OILS ───────────────────────────────────────────────────────────
+  { name: 'Ghee',              name_kannada: 'ತುಪ್ಪ',           category: 'FAT',     calories: 900, protein_g: 0.0, carbs_g: 0.0, fats_g: 100.0, fiber_g: 0.0, calcium_mg: 0, iron_mg: 0.0, cooking_factor: 1.0, default_unit: 'TBSP' },
+  { name: 'Coconut Oil',                                        category: 'FAT',     calories: 862, protein_g: 0.0, carbs_g: 0.0, fats_g: 100.0, fiber_g: 0.0, calcium_mg: 0, iron_mg: 0.0, cooking_factor: 1.0, default_unit: 'TBSP' },
+  { name: 'Olive Oil',                                          category: 'FAT',     calories: 884, protein_g: 0.0, carbs_g: 0.0, fats_g: 100.0, fiber_g: 0.0, calcium_mg: 1, iron_mg: 0.6, cooking_factor: 1.0, default_unit: 'TBSP' },
+  { name: 'Sunflower Oil',                                      category: 'FAT',     calories: 884, protein_g: 0.0, carbs_g: 0.0, fats_g: 100.0, fiber_g: 0.0, calcium_mg: 0, iron_mg: 0.0, cooking_factor: 1.0, default_unit: 'TBSP' },
+
+  // ── BEVERAGES ─────────────────────────────────────────────────────────────
+  { name: 'Coconut Water',     name_kannada: 'ತೆಂಗಿನ ನೀರು',   category: 'BEVERAGE', calories: 19, protein_g: 0.7, carbs_g: 3.7, fats_g: 0.2, fiber_g: 1.1, calcium_mg: 24, iron_mg: 0.3, vitamin_c_mg: 2, cooking_factor: 1.0, default_unit: 'ML' },
+  { name: 'Buttermilk',        name_kannada: 'ಮಜ್ಜಿಗೆ',         category: 'BEVERAGE', calories: 40, protein_g: 3.3, carbs_g: 4.8, fats_g: 0.9, fiber_g: 0.0, calcium_mg: 116, iron_mg: 0.1, cooking_factor: 1.0, default_unit: 'ML' },
+  { name: 'Green Tea',                                           category: 'BEVERAGE', calories: 1,  protein_g: 0.2, carbs_g: 0.2, fats_g: 0.0, fiber_g: 0.0, calcium_mg: 0,  iron_mg: 0.0, cooking_factor: 1.0, default_unit: 'ML' },
+  { name: 'Black Coffee',                                        category: 'BEVERAGE', calories: 2,  protein_g: 0.3, carbs_g: 0.0, fats_g: 0.0, fiber_g: 0.0, calcium_mg: 2,  iron_mg: 0.0, cooking_factor: 1.0, default_unit: 'ML' },
+  { name: 'Protein Shake (Milk based)',                          category: 'BEVERAGE', calories: 150, protein_g: 25.0, carbs_g: 10.0, fats_g: 3.0, fiber_g: 1.0, calcium_mg: 300, iron_mg: 1.0, cooking_factor: 1.0, default_unit: 'ML' },
+
+  // ── SPICES & CONDIMENTS ───────────────────────────────────────────────────
+  { name: 'Sambar',            name_kannada: 'ಸಾಂಬಾರ್',         category: 'PREPARED', calories: 50, protein_g: 2.5, carbs_g: 8.0, fats_g: 1.0, fiber_g: 2.0, calcium_mg: 30, iron_mg: 0.8, cooking_factor: 1.0 },
+  { name: 'Rasam',             name_kannada: 'ರಸಂ',              category: 'PREPARED', calories: 30, protein_g: 1.5, carbs_g: 5.0, fats_g: 0.5, fiber_g: 0.8, calcium_mg: 20, iron_mg: 0.5, cooking_factor: 1.0 },
+  { name: 'Chutney (Coconut)', name_kannada: 'ಕಾಯಿ ಚಟ್ನಿ',      category: 'PREPARED', calories: 180, protein_g: 2.0, carbs_g: 8.0, fats_g: 16.0, fiber_g: 4.5, calcium_mg: 15, iron_mg: 1.2, cooking_factor: 1.0 },
+  { name: 'Pickle (Mango)',    name_kannada: 'ಮಾವಿನ ಉಪ್ಪಿನಕಾಯಿ', category: 'CONDIMENT', calories: 88, protein_g: 0.8, carbs_g: 11.4, fats_g: 4.6, fiber_g: 2.4, calcium_mg: 25, iron_mg: 0.7, sodium_mg: 2300, cooking_factor: 1.0 },
+  { name: 'Sugar',             name_kannada: 'ಸಕ್ಕರೆ',           category: 'CONDIMENT', calories: 387, protein_g: 0.0, carbs_g: 100.0, fats_g: 0.0, fiber_g: 0.0, calcium_mg: 1, iron_mg: 0.1, cooking_factor: 1.0, default_unit: 'TSP' },
+  { name: 'Honey',             name_kannada: 'ಜೇನು ತುಪ್ಪ',       category: 'CONDIMENT', calories: 304, protein_g: 0.3, carbs_g: 82.4, fats_g: 0.0, fiber_g: 0.2, calcium_mg: 6, iron_mg: 0.4, cooking_factor: 1.0, default_unit: 'TBSP' },
+  { name: 'Jaggery',          name_kannada: 'ಬೆಲ್ಲ',             category: 'CONDIMENT', calories: 383, protein_g: 0.4, carbs_g: 98.5, fats_g: 0.1, fiber_g: 0.0, calcium_mg: 80, iron_mg: 11.4, cooking_factor: 1.0 },
+];
+
+// ─── ACHIEVEMENTS ─────────────────────────────────────────────────────────────
+const ACHIEVEMENTS = [
+  { code: 'FIRST_WORKOUT',   name: 'First Step',        category: 'FITNESS',   points: 5,  description: 'Log your first workout', condition: { metric: 'workout_count', operator: 'gte', value: 1 } },
+  { code: 'WEEK_WARRIOR',    name: 'Week Warrior',      category: 'FITNESS',   points: 20, description: 'Work out 7 days in a row', condition: { metric: 'consecutive_workout_days', operator: 'gte', value: 7 } },
+  { code: 'IRON_MAN',        name: 'Iron Man',          category: 'FITNESS',   points: 100, description: 'Work out 30 consecutive days', condition: { metric: 'consecutive_workout_days', operator: 'gte', value: 30 } },
+  { code: 'CARDIO_BEAST',    name: 'Cardio Beast',      category: 'FITNESS',   points: 50, description: 'Run 100km total', condition: { metric: 'total_run_distance_km', operator: 'gte', value: 100 } },
+  { code: 'YOGA_ZEN',        name: 'Yoga Zen',          category: 'FITNESS',   points: 30, description: 'Complete 20 yoga sessions', condition: { metric: 'yoga_sessions', operator: 'gte', value: 20 } },
+  { code: 'TREKKING_EXPLORER', name: 'Trekking Explorer', category: 'FITNESS', points: 40, description: 'Trek 50km total', condition: { metric: 'trekking_distance_km', operator: 'gte', value: 50 } },
+  { code: 'FIRST_MEAL_LOG',  name: 'Nutrition Rookie', category: 'NUTRITION',  points: 5,  description: 'Log your first meal', condition: { metric: 'meals_logged', operator: 'gte', value: 1 } },
+  { code: 'PROTEIN_MASTER',  name: 'Protein Master',   category: 'NUTRITION',  points: 30, description: 'Hit protein goal 7 consecutive days', condition: { metric: 'consecutive_protein_days', operator: 'gte', value: 7 } },
+  { code: 'MACRO_MAESTRO',   name: 'Macro Maestro',    category: 'NUTRITION',  points: 50, description: 'Hit all macro goals 7 days in a row', condition: { metric: 'consecutive_macro_days', operator: 'gte', value: 7 } },
+  { code: 'MEAL_LOGGER_50',  name: 'Dedicated Logger', category: 'NUTRITION',  points: 20, description: 'Log 50 meals', condition: { metric: 'meals_logged', operator: 'gte', value: 50 } },
+  { code: 'MEAL_LOGGER_365', name: 'Raw Tracker',      category: 'NUTRITION',  points: 100, description: 'Log 365 meals', condition: { metric: 'meals_logged', operator: 'gte', value: 365 } },
+  { code: 'FIRST_ORDER',     name: 'Cloud Kitchen Fan', category: 'KITCHEN',   points: 10, description: 'Place your first kitchen order', condition: { metric: 'kitchen_orders', operator: 'gte', value: 1 } },
+  { code: 'STREAK_7',        name: '7-Day Streak',     category: 'STREAK',     points: 25, description: 'Maintain a 7-day activity streak', condition: { metric: 'activity_streak', operator: 'gte', value: 7 } },
+  { code: 'FIRST_FRIEND',    name: 'Team Player',      category: 'SOCIAL',     points: 10, description: 'Add your first friend', condition: { metric: 'friends_count', operator: 'gte', value: 1 } },
+];
+
+// ─── SAMPLE CLOUD KITCHEN ─────────────────────────────────────────────────────
+const SAMPLE_KITCHEN = {
+  name: 'FitFuel Kitchen - Bangalore',
+  city: 'Bangalore',
+  address: '4th Block, Jayanagar, Bangalore - 560041',
+  lat: 12.9249,
+  lng: 77.5938,
+  phone: '+91-80-4567-8901',
+  email: 'bangalore@fitfuelkitchen.com',
+  delivery_zones: ['560041', '560069', '560070', '560011', '560004', '560010'],
+  max_capacity_per_day: 500,
+  staff_count: 8,
+};
+
+// ─── MAIN SEED ────────────────────────────────────────────────────────────────
+async function main() {
+  console.log('🌱 Starting database seed...');
+
+  // Seed foods
+  console.log(`\n📦 Seeding ${FOODS.length} Indian foods...`);
+  let foodCount = 0;
+  for (const food of FOODS) {
+    await prisma.food.upsert({
+      where: { name: food.name },
+      update: food,
+      create: food,
+    }).catch(() => {}); // skip unique constraint issues on re-seed
+    foodCount++;
+  }
+  console.log(`   ✅ ${foodCount} foods seeded`);
+
+  // Seed achievements
+  console.log(`\n🏆 Seeding ${ACHIEVEMENTS.length} achievements...`);
+  for (const ach of ACHIEVEMENTS) {
+    await prisma.achievement.upsert({
+      where: { code: ach.code },
+      update: ach,
+      create: ach,
+    });
+  }
+  console.log(`   ✅ ${ACHIEVEMENTS.length} achievements seeded`);
+
+  // Seed cloud kitchen
+  console.log('\n🍳 Seeding sample cloud kitchen...');
+  await prisma.cloudKitchen.upsert({
+    where: { name: SAMPLE_KITCHEN.name },
+    update: SAMPLE_KITCHEN,
+    create: SAMPLE_KITCHEN,
+  }).catch(() => {});
+  console.log('   ✅ Cloud kitchen seeded');
+
+  // Seed GPS segments (Bangalore popular running routes)
+  const SEGMENTS = [
+    { name: 'Cubbon Park Loop', city: 'Bangalore', start_lat: 12.9716, start_lng: 77.5946, end_lat: 12.9716, end_lng: 77.5946, distance_km: 3.2, elevation_m: 0 },
+    { name: 'Lalbagh Morning Sprint', city: 'Bangalore', start_lat: 12.9507, start_lng: 77.5848, end_lat: 12.9507, end_lng: 77.5848, distance_km: 2.8, elevation_m: 5 },
+    { name: 'Ulsoor Lake Lap', city: 'Bangalore', start_lat: 12.9819, start_lng: 77.6198, end_lat: 12.9819, end_lng: 77.6198, distance_km: 2.4, elevation_m: 0 },
+    { name: 'Nandi Hills Trek (Base to Summit)', city: 'Nandi Hills', start_lat: 13.3617, start_lng: 77.6836, end_lat: 13.3700, end_lng: 77.6872, distance_km: 3.5, elevation_m: 450 },
+    { name: 'Skandagiri Night Trek', city: 'Chikballapur', start_lat: 13.4396, start_lng: 77.6770, end_lat: 13.4450, end_lng: 77.6810, distance_km: 4.0, elevation_m: 500 },
+  ];
+
+  console.log('\n🏃 Seeding running segments...');
+  for (const seg of SEGMENTS) {
+    await prisma.segment.upsert({
+      where: { name: seg.name },
+      update: seg,
+      create: seg,
+    }).catch(() => {});
+  }
+  console.log(`   ✅ ${SEGMENTS.length} segments seeded`);
+
+  const foodTotal  = await prisma.food.count();
+  const achTotal   = await prisma.achievement.count();
+  const kitchTotal = await prisma.cloudKitchen.count();
+  const segTotal   = await prisma.segment.count();
+
+  console.log('\n🎉 Seed complete!');
+  console.log(`   Foods:        ${foodTotal}`);
+  console.log(`   Achievements: ${achTotal}`);
+  console.log(`   Kitchens:     ${kitchTotal}`);
+  console.log(`   Segments:     ${segTotal}`);
+}
+
+main()
+  .catch((e) => { console.error('❌ Seed failed:', e); process.exit(1); })
+  .finally(async () => { await prisma.$disconnect(); });

@@ -1,0 +1,987 @@
+// prisma/schema.prisma
+// Phase 0: Full schema design for all 3 phases
+// Railway PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum WorkoutType {
+  CARDIO
+  RESISTANCE
+  YOGA
+  AEROBICS
+  RUNNING
+  TREKKING
+}
+
+enum WorkoutIntensity {
+  LOW
+  MODERATE
+  HIGH
+  VERY_HIGH
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  SNACK
+  DINNER
+  PRE_WORKOUT
+  POST_WORKOUT
+}
+
+enum Unit {
+  GRAMS
+  ML
+  PIECES
+  TBSP
+  TSP
+  CUPS
+}
+
+enum Goal {
+  WEIGHT_LOSS
+  MUSCLE_GAIN
+  MAINTENANCE
+  ENDURANCE
+  FLEXIBILITY
+  GENERAL_FITNESS
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum SubscriptionPlan {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+enum DeliveryStatus {
+  SCHEDULED
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED
+  FAILED
+}
+
+enum ClubInterest {
+  RUNNING
+  STRENGTH
+  YOGA
+  AEROBICS
+  TREKKING
+  WEIGHT_LOSS
+  GENERAL_FITNESS
+}
+
+enum WearableDevice {
+  APPLE_WATCH
+  FITBIT
+  GOOGLE_FIT
+  SAMSUNG_HEALTH
+  GARMIN
+}
+
+enum LeaderboardType {
+  MOST_ACTIVE
+  MACRO_ADHERENCE
+  LOCAL_LEGEND
+  POINTS
+  TRANSFORMATION
+}
+
+enum LeaderboardPeriod {
+  WEEKLY
+  MONTHLY
+  ALL_TIME
+}
+
+// ─────────────────────────────────────────────
+// AUTH & USERS
+// ─────────────────────────────────────────────
+
+model User {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  pin_hash   String
+  name       String?
+  phone      String?
+  avatar_url String?
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  sessions           Session[]
+  otp_tokens         OtpToken[]
+  fitness_profile    FitnessProfile?
+  user_goals         UserGoal[]
+  workouts           Workout[]
+  meal_items         MealItem[]
+  daily_summaries    DailySummary[]
+  voice_logs         VoiceLog[]
+  meal_plans         MealPlan[]
+  orders             Order[]
+  subscriptions      Subscription[]
+  meal_reviews       MealReview[]
+  achievements       UserAchievement[]
+  points             UserPoints?
+  friends_sent       Friend[]           @relation("FriendRequester")
+  friends_received   Friend[]           @relation("FriendReceiver")
+  kudos_sent         Kudos[]            @relation("KudosSender")
+  kudos_received     Kudos[]            @relation("KudosReceiver")
+  club_memberships   ClubMember[]
+  challenges         ChallengeParticipant[]
+  wearable_integrations WearableIntegration[]
+  wearable_data      WearableData[]
+  mood_tracking      MoodTracking[]
+  ai_insights        AiInsight[]
+  meal_templates     MealTemplate[]
+  recipe_reviews     RecipeReview[]
+  leaderboard_entries Leaderboard[]
+  vision_logs        VisionLog[]
+  sync_queue         SyncQueue[]
+  running_segments   SegmentTime[]
+
+  @@index([email])
+}
+
+model Session {
+  id         String   @id @default(uuid())
+  user_id    String
+  token_hash String   @unique
+  expires_at DateTime
+  created_at DateTime @default(now())
+  user_agent String?
+  ip_address String?
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([token_hash])
+}
+
+model OtpToken {
+  id         String   @id @default(uuid())
+  user_id    String
+  otp_hash   String
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+// ─────────────────────────────────────────────
+// FITNESS PROFILES & GOALS
+// ─────────────────────────────────────────────
+
+model FitnessProfile {
+  id            String   @id @default(uuid())
+  user_id       String   @unique
+  age           Int
+  gender        Gender
+  height_cm     Float
+  weight_kg     Float
+  body_fat_pct  Float?
+  activity_level String  @default("MODERATE") // SEDENTARY, LIGHT, MODERATE, ACTIVE, VERY_ACTIVE
+  primary_goal  Goal     @default(GENERAL_FITNESS)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model UserGoal {
+  id               String   @id @default(uuid())
+  user_id          String
+  target_calories  Int
+  target_protein_g Float
+  target_carbs_g   Float
+  target_fats_g    Float
+  target_fiber_g   Float    @default(25)
+  target_water_ml  Int      @default(2500)
+  is_active        Boolean  @default(true)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+// ─────────────────────────────────────────────
+// WORKOUTS
+// ─────────────────────────────────────────────
+
+model Workout {
+  id              String          @id @default(uuid())
+  user_id         String
+  type            WorkoutType
+  date            DateTime        @db.Date
+  duration_min    Int?
+  calories_burned Float
+  notes           String?
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+
+  // Type-specific fields stored as JSON for flexibility
+  metadata        Json?           // e.g. { distance_km, pace, elevation, sets, reps, weight }
+
+  user            User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  exercise_logs   ExerciseLog[]
+  segment_times   SegmentTime[]
+
+  @@index([user_id])
+  @@index([user_id, date])
+}
+
+model ExerciseLog {
+  id          String   @id @default(uuid())
+  workout_id  String
+  exercise    String   // e.g. "Bench Press", "Squat"
+  set_number  Int
+  reps        Int?
+  weight_kg   Float?
+  duration_s  Int?
+  notes       String?
+  created_at  DateTime @default(now())
+
+  workout Workout @relation(fields: [workout_id], references: [id], onDelete: Cascade)
+
+  @@index([workout_id])
+}
+
+// GPS Segments for running/trekking
+model Segment {
+  id          String   @id @default(uuid())
+  name        String
+  city        String
+  start_lat   Float
+  start_lng   Float
+  end_lat     Float
+  end_lng     Float
+  distance_km Float
+  elevation_m Float    @default(0)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+
+  segment_times SegmentTime[]
+
+  @@index([city])
+}
+
+model SegmentTime {
+  id          String   @id @default(uuid())
+  segment_id  String
+  user_id     String
+  workout_id  String
+  time_s      Int      // time in seconds
+  pace_s_km   Float    // seconds per km
+  is_pr       Boolean  @default(false) // personal record
+  created_at  DateTime @default(now())
+
+  segment Segment @relation(fields: [segment_id], references: [id])
+  user    User    @relation(fields: [user_id], references: [id])
+  workout Workout @relation(fields: [workout_id], references: [id])
+
+  @@index([segment_id])
+  @@index([user_id])
+}
+
+// ─────────────────────────────────────────────
+// FOOD DATABASE & NUTRITION
+// ─────────────────────────────────────────────
+
+model Food {
+  id              String   @id @default(uuid())
+  name            String
+  name_kannada    String?
+  category        String   // GRAIN, PROTEIN, VEGETABLE, FRUIT, DAIRY, FAT, BEVERAGE, SPICE
+  barcode         String?  @unique
+  // Per 100g / 100ml raw weight
+  calories        Float
+  protein_g       Float
+  carbs_g         Float
+  fats_g          Float
+  fiber_g         Float    @default(0)
+  sugar_g         Float    @default(0)
+  sodium_mg       Float    @default(0)
+  potassium_mg    Float    @default(0)
+  calcium_mg      Float    @default(0)
+  iron_mg         Float    @default(0)
+  vitamin_c_mg    Float    @default(0)
+  vitamin_d_mcg   Float    @default(0)
+  vitamin_b12_mcg Float    @default(0)
+  zinc_mg         Float    @default(0)
+  magnesium_mg    Float    @default(0)
+  phosphorus_mg   Float    @default(0)
+  folate_mcg      Float    @default(0)
+  cholesterol_mg  Float    @default(0)
+  cooking_factor  Float    @default(1.0) // multiplier for cooked vs raw weight
+  default_unit    Unit     @default(GRAMS)
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+
+  meal_items     MealItem[]
+  template_items TemplateItem[]
+
+  @@index([name])
+  @@index([barcode])
+  @@index([category])
+}
+
+model MealItem {
+  id           String   @id @default(uuid())
+  user_id      String
+  food_id      String
+  meal_type    MealType
+  date         DateTime @db.Date
+  quantity_raw Float    // raw weight in grams/ml
+  unit         Unit     @default(GRAMS)
+  order_id     String?  // set if auto-logged from cloud kitchen order
+  auto_logged  Boolean  @default(false)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Denormalized nutrition (calculated at log time, per quantity_raw)
+  calories     Float
+  protein_g    Float
+  carbs_g      Float
+  fats_g       Float
+  fiber_g      Float    @default(0)
+
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  food  Food  @relation(fields: [food_id], references: [id])
+  order Order? @relation(fields: [order_id], references: [id])
+
+  @@index([user_id])
+  @@index([user_id, date])
+}
+
+model DailySummary {
+  id                      String   @id @default(uuid())
+  user_id                 String
+  date                    DateTime @db.Date
+  total_calories_consumed Float    @default(0)
+  total_calories_burned   Float    @default(0)
+  net_calories            Float    @default(0)
+  total_protein_g         Float    @default(0)
+  total_carbs_g           Float    @default(0)
+  total_fats_g            Float    @default(0)
+  total_fiber_g           Float    @default(0)
+  total_sodium_mg         Float    @default(0)
+  total_calcium_mg        Float    @default(0)
+  total_iron_mg           Float    @default(0)
+  total_vitamin_c_mg      Float    @default(0)
+  total_zinc_mg           Float    @default(0)
+  workout_count           Int      @default(0)
+  step_count              Int?
+  water_ml                Int      @default(0)
+  updated_at              DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, date])
+  @@index([user_id])
+  @@index([user_id, date])
+}
+
+model VoiceLog {
+  id            String   @id @default(uuid())
+  user_id       String
+  transcript    String
+  parsed_foods  Json     // [{ food_name, quantity, unit }]
+  created_at    DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model VisionLog {
+  id               String   @id @default(uuid())
+  user_id          String
+  image_url        String
+  identified_foods Json     // [{ name, quantity_g, unit }]
+  created_at       DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+// ─────────────────────────────────────────────
+// MEAL PLANS
+// ─────────────────────────────────────────────
+
+model MealPlan {
+  id               String   @id @default(uuid())
+  user_id          String?  // null = system plan
+  name             String
+  description      String?
+  total_calories   Float
+  total_protein_g  Float
+  total_carbs_g    Float
+  total_fats_g     Float
+  target_goal      Goal?
+  is_public        Boolean  @default(false)
+  is_system        Boolean  @default(false)
+  created_at       DateTime @default(now())
+
+  user       User?            @relation(fields: [user_id], references: [id])
+  plan_items MealPlanItem[]
+  orders     Order[]
+
+  @@index([user_id])
+}
+
+model MealPlanItem {
+  id           String   @id @default(uuid())
+  plan_id      String
+  food_id      String?
+  meal_type    MealType
+  name         String
+  quantity_raw Float
+  unit         Unit     @default(GRAMS)
+  calories     Float
+  protein_g    Float
+  carbs_g      Float
+  fats_g       Float
+  day_of_week  Int?     // 0-6, null = daily
+
+  plan MealPlan @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+
+  @@index([plan_id])
+}
+
+// ─────────────────────────────────────────────
+// CLOUD KITCHEN
+// ─────────────────────────────────────────────
+
+model CloudKitchen {
+  id                     String   @id @default(uuid())
+  name                   String
+  city                   String
+  address                String
+  lat                    Float
+  lng                    Float
+  phone                  String
+  email                  String
+  operational_hours_open String   @default("06:00")
+  operational_hours_close String  @default("22:00")
+  max_capacity_per_day   Int      @default(500)
+  delivery_zones         Json     // array of pincodes
+  pickup_available       Boolean  @default(true)
+  staff_count            Int      @default(8)
+  fssai_number           String?
+  is_active              Boolean  @default(true)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  orders                Order[]
+  ingredients_inventory IngredientInventory[]
+
+  @@index([city])
+}
+
+model KitchenMeal {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  category       String   // BREAKFAST, LUNCH, DINNER, SNACK
+  image_url      String?
+  price_inr      Float
+  // Nutrition per serving (exact, from kitchen recipe)
+  calories       Float
+  protein_g      Float
+  carbs_g        Float
+  fats_g         Float
+  fiber_g        Float    @default(0)
+  serving_weight Int      // grams
+  is_vegetarian  Boolean  @default(false)
+  is_vegan       Boolean  @default(false)
+  allergens      Json?    // [PEANUTS, DAIRY, GLUTEN, ...]
+  is_active      Boolean  @default(true)
+  avg_rating     Float    @default(0)
+  review_count   Int      @default(0)
+  created_at     DateTime @default(now())
+
+  order_items  OrderItem[]
+  meal_reviews MealReview[]
+
+  @@index([category])
+}
+
+model Order {
+  id           String      @id @default(uuid())
+  user_id      String
+  kitchen_id   String
+  meal_plan_id String?
+  status       OrderStatus @default(PENDING)
+  total_inr    Float
+  delivery_address String
+  delivery_lat Float?
+  delivery_lng Float?
+  special_notes String?
+  otp          String?     // delivery OTP
+  scheduled_at DateTime?
+  delivered_at DateTime?
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
+
+  user       User         @relation(fields: [user_id], references: [id])
+  kitchen    CloudKitchen @relation(fields: [kitchen_id], references: [id])
+  meal_plan  MealPlan?    @relation(fields: [meal_plan_id], references: [id])
+  order_items OrderItem[]
+  delivery    Delivery?
+  meal_items  MealItem[]
+  meal_reviews MealReview[]
+
+  @@index([user_id])
+  @@index([kitchen_id])
+  @@index([status])
+}
+
+model OrderItem {
+  id           String      @id @default(uuid())
+  order_id     String
+  kitchen_meal_id String
+  quantity     Int         @default(1)
+  price_inr    Float
+  meal_type    MealType
+
+  order        Order       @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  kitchen_meal KitchenMeal @relation(fields: [kitchen_meal_id], references: [id])
+
+  @@index([order_id])
+}
+
+model Subscription {
+  id                String             @id @default(uuid())
+  user_id           String
+  plan_name         String
+  plan              SubscriptionPlan
+  status            SubscriptionStatus @default(ACTIVE)
+  meals_per_day     Int                @default(3)
+  price_inr         Float
+  started_at        DateTime           @default(now())
+  next_billing_date DateTime
+  pause_from_date   DateTime?
+  pause_until_date  DateTime?
+  skipped_deliveries Json?             // [{ date, meal_type }]
+  cancelled_at      DateTime?
+  updated_at        DateTime           @updatedAt
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([status])
+}
+
+model Delivery {
+  id           String         @id @default(uuid())
+  order_id     String         @unique
+  status       DeliveryStatus @default(SCHEDULED)
+  rider_name   String?
+  rider_phone  String?
+  rider_lat    Float?
+  rider_lng    Float?
+  photo_url    String?        // delivery proof photo
+  picked_up_at DateTime?
+  delivered_at DateTime?
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @updatedAt
+
+  order Order @relation(fields: [order_id], references: [id])
+
+  @@index([order_id])
+}
+
+model IngredientInventory {
+  id          String       @id @default(uuid())
+  kitchen_id  String
+  ingredient  String
+  stock_kg    Float
+  min_stock_kg Float       @default(5)
+  unit        String       @default("KG")
+  updated_at  DateTime     @updatedAt
+
+  kitchen CloudKitchen @relation(fields: [kitchen_id], references: [id])
+
+  @@unique([kitchen_id, ingredient])
+}
+
+model MealReview {
+  id               String   @id @default(uuid())
+  user_id          String
+  kitchen_meal_id  String
+  order_id         String
+  rating           Int      // 1-5
+  taste_rating     Int?
+  freshness_rating Int?
+  packaging_rating Int?
+  delivery_rating  Int?
+  would_reorder    Boolean?
+  review_text      String?
+  created_at       DateTime @default(now())
+
+  user         User        @relation(fields: [user_id], references: [id])
+  kitchen_meal KitchenMeal @relation(fields: [kitchen_meal_id], references: [id])
+  order        Order       @relation(fields: [order_id], references: [id])
+
+  @@unique([user_id, order_id, kitchen_meal_id])
+  @@index([kitchen_meal_id])
+}
+
+// ─────────────────────────────────────────────
+// SOCIAL & GAMIFICATION
+// ─────────────────────────────────────────────
+
+model Friend {
+  id           String   @id @default(uuid())
+  requester_id String
+  receiver_id  String
+  is_accepted  Boolean  @default(false)
+  created_at   DateTime @default(now())
+
+  requester User @relation("FriendRequester", fields: [requester_id], references: [id])
+  receiver  User @relation("FriendReceiver", fields: [receiver_id], references: [id])
+
+  @@unique([requester_id, receiver_id])
+  @@index([requester_id])
+  @@index([receiver_id])
+}
+
+model Kudos {
+  id          String   @id @default(uuid())
+  sender_id   String
+  receiver_id String
+  workout_id  String?
+  message     String?
+  created_at  DateTime @default(now())
+
+  sender   User @relation("KudosSender", fields: [sender_id], references: [id])
+  receiver User @relation("KudosReceiver", fields: [receiver_id], references: [id])
+
+  @@index([receiver_id])
+}
+
+model Club {
+  id            String       @id @default(uuid())
+  name          String
+  description   String?
+  location      String?
+  interest_type ClubInterest
+  member_count  Int          @default(0)
+  created_by    String
+  is_public     Boolean      @default(true)
+  created_at    DateTime     @default(now())
+
+  members    ClubMember[]
+  challenges Challenge[]
+
+  @@index([interest_type])
+}
+
+model ClubMember {
+  id         String   @id @default(uuid())
+  club_id    String
+  user_id    String
+  role       String   @default("MEMBER") // MEMBER, MODERATOR, ADMIN
+  joined_at  DateTime @default(now())
+
+  club Club @relation(fields: [club_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([club_id, user_id])
+  @@index([club_id])
+  @@index([user_id])
+}
+
+model Challenge {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  club_id     String?
+  target_type String   // DISTANCE_KM, WORKOUT_COUNT, CALORIE_BURN, etc.
+  target_value Float
+  starts_at   DateTime
+  ends_at     DateTime
+  created_at  DateTime @default(now())
+
+  club         Club?                  @relation(fields: [club_id], references: [id])
+  participants ChallengeParticipant[]
+
+  @@index([club_id])
+}
+
+model ChallengeParticipant {
+  id           String   @id @default(uuid())
+  challenge_id String
+  user_id      String
+  progress     Float    @default(0)
+  rank         Int?
+  completed    Boolean  @default(false)
+  joined_at    DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  challenge Challenge @relation(fields: [challenge_id], references: [id])
+  user      User      @relation(fields: [user_id], references: [id])
+
+  @@unique([challenge_id, user_id])
+  @@index([challenge_id])
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  code        String   @unique  // e.g. IRON_MAN, PROTEIN_MASTER
+  name        String
+  description String
+  category    String   // FITNESS, NUTRITION, SOCIAL, KITCHEN, STREAK
+  icon_url    String?
+  points      Int      @default(10)
+  condition   Json     // { metric, operator, value, period? }
+
+  user_achievements UserAchievement[]
+}
+
+model UserAchievement {
+  id             String   @id @default(uuid())
+  user_id        String
+  achievement_id String
+  earned_at      DateTime @default(now())
+  notified       Boolean  @default(false)
+
+  user        User        @relation(fields: [user_id], references: [id])
+  achievement Achievement @relation(fields: [achievement_id], references: [id])
+
+  @@unique([user_id, achievement_id])
+  @@index([user_id])
+}
+
+model UserPoints {
+  id             String   @id @default(uuid())
+  user_id        String   @unique
+  total_points   Int      @default(0)
+  weekly_points  Int      @default(0)
+  monthly_points Int      @default(0)
+  updated_at     DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([total_points])
+  @@index([monthly_points])
+}
+
+model Leaderboard {
+  id           String            @id @default(uuid())
+  type         LeaderboardType
+  period       LeaderboardPeriod @default(MONTHLY)
+  period_key   String            // e.g. "2026-03" for monthly
+  user_id      String
+  rank         Int
+  metric_value Float
+  created_at   DateTime          @default(now())
+  updated_at   DateTime          @updatedAt
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([type, period, period_key, user_id])
+  @@index([type, period, period_key])
+}
+
+// ─────────────────────────────────────────────
+// WEARABLES
+// ─────────────────────────────────────────────
+
+model WearableIntegration {
+  id            String         @id @default(uuid())
+  user_id       String
+  device_type   WearableDevice
+  access_token  String         // encrypted
+  refresh_token String?        // encrypted
+  is_active     Boolean        @default(true)
+  last_sync     DateTime?
+  created_at    DateTime       @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, device_type])
+  @@index([user_id])
+}
+
+model WearableData {
+  id               String         @id @default(uuid())
+  user_id          String
+  date             DateTime       @db.Date
+  device_type      WearableDevice
+  steps            Int?
+  heart_rate_avg   Float?
+  heart_rate_max   Float?
+  sleep_hours      Float?
+  sleep_quality    Float?
+  calories_burned  Float?
+  active_minutes   Int?
+  distance_km      Float?
+  elevation_m      Float?
+  synced_at        DateTime       @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, date, device_type])
+  @@index([user_id, date])
+}
+
+// ─────────────────────────────────────────────
+// MOOD & MENTAL HEALTH
+// ─────────────────────────────────────────────
+
+model MoodTracking {
+  id              String   @id @default(uuid())
+  user_id         String
+  date            DateTime @db.Date
+  sleep_hours     Float?
+  mood_rating     Int?     // 1-5
+  stress_level    Int?     // 1-5
+  energy_level    Int?     // 1-5
+  recovery_state  Int?     // 1-5
+  notes           String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, date])
+  @@index([user_id])
+}
+
+// ─────────────────────────────────────────────
+// AI INSIGHTS
+// ─────────────────────────────────────────────
+
+model AiInsight {
+  id              String   @id @default(uuid())
+  user_id         String
+  week_of         DateTime @db.Date
+  narrative_text  String
+  key_metrics     Json
+  recommendations Json
+  generated_at    DateTime @default(now())
+  notified        Boolean  @default(false)
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, week_of])
+  @@index([user_id])
+}
+
+// ─────────────────────────────────────────────
+// RECIPES / MEAL TEMPLATES
+// ─────────────────────────────────────────────
+
+model MealTemplate {
+  id             String   @id @default(uuid())
+  user_id        String
+  template_name  String
+  category       MealType
+  is_public      Boolean  @default(false)
+  total_calories Float
+  total_protein_g Float
+  total_carbs_g  Float
+  total_fats_g   Float
+  avg_rating     Float    @default(0)
+  review_count   Int      @default(0)
+  created_at     DateTime @default(now())
+
+  user           User           @relation(fields: [user_id], references: [id])
+  template_items TemplateItem[]
+  recipe_reviews RecipeReview[]
+
+  @@index([user_id])
+  @@index([is_public])
+}
+
+model TemplateItem {
+  id           String   @id @default(uuid())
+  template_id  String
+  food_id      String
+  quantity_raw Float
+  unit         Unit     @default(GRAMS)
+
+  template MealTemplate @relation(fields: [template_id], references: [id], onDelete: Cascade)
+  food     Food         @relation(fields: [food_id], references: [id])
+
+  @@index([template_id])
+}
+
+model RecipeReview {
+  id          String   @id @default(uuid())
+  template_id String
+  user_id     String
+  rating      Int      // 1-5
+  review_text String?
+  created_at  DateTime @default(now())
+
+  template MealTemplate @relation(fields: [template_id], references: [id])
+  user     User         @relation(fields: [user_id], references: [id])
+
+  @@unique([template_id, user_id])
+}
+
+// ─────────────────────────────────────────────
+// OFFLINE SYNC
+// ─────────────────────────────────────────────
+
+model SyncQueue {
+  id         String   @id @default(uuid())
+  user_id    String
+  method     String   // POST, PUT, DELETE
+  url        String
+  body       Json?
+  synced     Boolean  @default(false)
+  error      String?
+  created_at DateTime @default(now())
+  synced_at  DateTime?
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, synced])
+}
