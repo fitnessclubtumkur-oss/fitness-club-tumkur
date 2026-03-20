@@ -84,6 +84,22 @@ app.use("/api", syncRoutes);
 app.use("/api", kitchenRoutes);
 app.use("/api", gamificationRoutes);
 
+
+// ─── One-time seed endpoint (protected by SEED_SECRET) ───────────────────────
+app.post('/api/admin/seed', async (req, res) => {
+  const secret = req.headers['x-seed-secret'];
+  if (!secret || secret !== process.env.SEED_SECRET) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+  try {
+    const { execSync } = require('child_process');
+    const out = execSync('node prisma/seed.js', { timeout: 120_000, cwd: require('path').join(__dirname, '..') }).toString();
+    return res.json({ success: true, message: 'Seed completed', output: out.slice(-500) });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // ─── Serve PWA frontend ───────────────────────────────────────────────────────
 const path = require('path');
 app.use(express.static(path.join(__dirname, '../assets'), { maxAge: '1d', etag: true }));
