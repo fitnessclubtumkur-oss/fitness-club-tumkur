@@ -1,7 +1,7 @@
 // src/controllers/auth.controller.js
 'use strict';
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const prisma = require('../config/db');
 const { signToken, hashToken, generateOTP, hashOTP } = require('../utils/jwt');
 const { sendOTP } = require('../utils/email');
