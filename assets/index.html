@@ -1340,10 +1340,13 @@ const Dashboard = {
 
     // Hero
     const netEl = document.getElementById('net-cal');
+    if (!netEl) return; // not on dashboard tab
     netEl.textContent = net.toFixed(0);
     netEl.style.color = net > 500 ? 'var(--danger)' : net < -200 ? 'var(--accent3)' : 'var(--accent)';
-    document.getElementById('in-cal').textContent  = (a.calories || 0).toFixed(0);
-    document.getElementById('out-cal').textContent = burned.toFixed(0);
+    const inEl = document.getElementById('in-cal');
+    const outEl = document.getElementById('out-cal');
+    if (inEl) inEl.textContent  = (a.calories || 0).toFixed(0);
+    if (outEl) outEl.textContent = burned.toFixed(0);
 
     if (goals) {
       document.getElementById('cal-goal').textContent = goals.target_calories + ' kcal';
