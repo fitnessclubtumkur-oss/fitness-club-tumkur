@@ -2009,8 +2009,16 @@ const Profile = {
 
         <div class="card" style="display:flex; gap:12px; flex-direction:column;">
           <button class="btn btn-ghost" onclick="Onboard.start()">✏️ Edit Profile</button>
+          <button class="btn btn-ghost" onclick="Tracker.openWeightLog()">⚖️ Log Weight</button>
+          <button class="btn btn-ghost" onclick="Tracker.openMeasurements()">📏 Log Measurements</button>
+          <button class="btn btn-ghost" onclick="Tracker.load()">📊 Progress Analytics</button>
+          <button class="btn btn-ghost" onclick="Prefs.load()">🥗 Dietary Preferences</button>
           <button class="btn btn-danger" onclick="Auth.logout()">🚪 Logout</button>
         </div>
+
+        <div id="progress-section"></div>
+        <div id="weight-section"></div>
+        <div id="prefs-section"></div>
       `;
     } catch (e) {
       document.getElementById('profile-content').innerHTML = `
@@ -2089,6 +2097,353 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
+
+// ─────────────────────────────────────────────────────────
+// PHASE 2C — Progress Tracker + Weight + Measurements + Prefs
+// ─────────────────────────────────────────────────────────
+
+const Tracker = {
+  async load() {
+    // Ensure we're on profile tab
+    if (State.currentTab !== 'profile') { UI.showTab('profile'); return; }
+    await Profile.load();
+    const el = document.getElementById('progress-section');
+    if (!el) return;
+    el.innerHTML = '<div class="card"><div style="text-align:center;padding:10px;color:var(--muted);">⏳ Loading progress...</div></div>';
+    try {
+      const [progRes, weightRes] = await Promise.all([
+        api('GET', '/progress?period=30'),
+        api('GET', '/weight/history?days=90'),
+      ]);
+      const p = progRes.data;
+      const w = weightRes.data;
+      el.innerHTML = `
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">📊 30-Day Progress</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+            <div class="profile-stat">
+              <div class="profile-stat-val" style="color:var(--accent2);">${p.workouts.total}</div>
+              <div class="profile-stat-label">Workouts</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-val" style="color:var(--accent);">${p.workouts.consistency_pct}%</div>
+              <div class="profile-stat-label">Consistency</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-val" style="color:#ff6b35;">${(p.workouts.calories_burned/1000).toFixed(1)}k</div>
+              <div class="profile-stat-label">kcal Burned</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-val" style="color:var(--accent3);">${p.workouts.run_km}km</div>
+              <div class="profile-stat-label">Running</div>
+            </div>
+          </div>
+
+          ${p.nutrition.goal_calories ? `
+          <div style="margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;">Nutrition Avg</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              ${Tracker.macroBar('Calories', p.nutrition.avg_calories, p.nutrition.goal_calories, 'var(--accent)')}
+              ${Tracker.macroBar('Protein', p.nutrition.avg_protein_g, p.nutrition.goal_protein_g, 'var(--accent3)')}
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:8px;">Protein goal hit on ${p.nutrition.protein_goal_days}/${p.nutrition.tracking_days} tracked days</div>
+          </div>` : ''}
+
+          ${p.achievements.new_badges > 0 ? `
+          <div style="background:rgba(232,245,78,.06);border:1px solid rgba(232,245,78,.2);border-radius:8px;padding:12px;">
+            <div style="font-size:13px;font-weight:600;">🏆 ${p.achievements.new_badges} new badge(s) this month · +${p.achievements.points_earned} pts</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">${p.achievements.recent.filter(Boolean).join(' · ')}</div>
+          </div>` : ''}
+        </div>
+
+        ${w.stats ? `
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">⚖️ Weight Trend (90 days)</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+            <div class="profile-stat">
+              <div class="profile-stat-val">${w.stats.start_weight}kg</div>
+              <div class="profile-stat-label">Start</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-val">${w.stats.current_weight}kg</div>
+              <div class="profile-stat-label">Now</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-val" style="color:${w.stats.change_kg > 0 ? 'var(--danger)' : 'var(--success)'}">${w.stats.change_kg > 0 ? '+' : ''}${w.stats.change_kg}kg</div>
+              <div class="profile-stat-label">Change</div>
+            </div>
+          </div>
+          <canvas id="weight-chart" height="120"></canvas>
+        </div>` : ''}
+      `;
+
+      // Draw weight chart if data present
+      if (w.history && w.history.length > 1) {
+        setTimeout(() => Tracker.drawWeightChart(w.history), 100);
+      }
+    } catch(e) {
+      el.innerHTML = '';
+    }
+  },
+
+  macroBar(label, actual, goal, color) {
+    const pct = Math.min(100, Math.round((actual/goal)*100));
+    return `<div style="flex:1;min-width:120px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
+        <span style="color:var(--muted);">${label}</span>
+        <span style="font-weight:700;color:${color};">${Math.round(actual)}/${goal}</span>
+      </div>
+      <div style="height:5px;background:var(--bg3);border-radius:3px;">
+        <div style="width:${pct}%;background:${color};height:100%;border-radius:3px;transition:width .4s;"></div>
+      </div>
+    </div>`;
+  },
+
+  drawWeightChart(history) {
+    const canvas = document.getElementById('weight-chart');
+    if (!canvas || !window.Chart) return;
+    const existing = Chart.getChart(canvas);
+    if (existing) existing.destroy();
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels:   history.map(h => new Date(h.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})),
+        datasets: [{
+          label: 'Weight (kg)',
+          data:  history.map(h => h.weight_kg),
+          borderColor: 'var(--accent)',
+          backgroundColor: 'rgba(232,245,78,.08)',
+          borderWidth: 2,
+          pointRadius: 3,
+          fill: true,
+          tension: 0.4,
+        }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#888', maxTicksLimit: 6, font: { size: 10 } }, grid: { display: false } },
+          y: { ticks: { color: '#888', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.05)' } },
+        },
+      },
+    });
+  },
+
+  openWeightLog() {
+    const val = prompt('Enter current weight (kg):');
+    if (!val || isNaN(parseFloat(val))) return;
+    Tracker.saveWeight(parseFloat(val));
+  },
+
+  async saveWeight(kg) {
+    try {
+      const res = await api('POST', '/weight', { weight_kg: kg, date: new Date().toISOString().split('T')[0] });
+      if (res.success) {
+        Toast.show(`✅ Weight logged: ${kg}kg`, 'success');
+        if (State.currentTab === 'profile') Tracker.load();
+      }
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  openMeasurements() {
+    const waist = prompt('Waist (cm) — leave blank to skip:');
+    const chest = prompt('Chest (cm) — leave blank to skip:');
+    const body_fat = prompt('Body fat % — leave blank to skip:');
+    const data = {};
+    if (waist && !isNaN(waist)) data.waist_cm = parseFloat(waist);
+    if (chest && !isNaN(chest)) data.chest_cm = parseFloat(chest);
+    if (body_fat && !isNaN(body_fat)) data.body_fat_pct = parseFloat(body_fat);
+    if (!Object.keys(data).length) return;
+    data.date = new Date().toISOString().split('T')[0];
+    Tracker.saveMeasurements(data);
+  },
+
+  async saveMeasurements(data) {
+    try {
+      const res = await api('POST', '/measurements', data);
+      if (res.success) Toast.show('📏 Measurements saved!', 'success');
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+};
+
+// ─── DIETARY PREFERENCES ──────────────────────────────────────────────────────
+const Prefs = {
+  data: { allergies: [], dietary: [], dislikes: [] },
+
+  async load() {
+    if (State.currentTab !== 'profile') { UI.showTab('profile'); return; }
+    await Profile.load();
+    const el = document.getElementById('prefs-section');
+    if (!el) return;
+
+    try {
+      const res = await api('GET', '/preferences');
+      Prefs.data = (res.data && res.data.preferences) || { allergies: [], dietary: [], dislikes: [] };
+    } catch { Prefs.data = { allergies: [], dietary: [], dislikes: [] }; }
+
+    const ALLERGENS = ['PEANUTS','TREE_NUTS','DAIRY','EGGS','GLUTEN','SOY','SHELLFISH','FISH'];
+    const DIETARY   = ['VEGETARIAN','VEGAN','KETO','PALEO','DIABETIC','LOW_SODIUM','HIGH_PROTEIN'];
+
+    const chip = (label, val, group, active) =>
+      `<div onclick="Prefs.toggle('${group}','${val}',this)"
+        style="display:inline-flex;align-items:center;padding:8px 14px;border-radius:20px;font-size:12px;font-family:var(--font-head);font-weight:600;cursor:pointer;border:1.5px solid ${active?'var(--accent)':'var(--border)'};background:${active?'rgba(232,245,78,.12)':'var(--bg3)'};color:${active?'var(--accent)':'var(--muted)'};margin:4px;transition:all .15s;" data-val="${val}" data-group="${group}">
+        ${active ? '✓ ' : ''}${label}
+      </div>`;
+
+    el.innerHTML = `
+      <div class="card" style="margin-top:12px;">
+        <div class="card-title">🥗 Dietary Preferences</div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;">Dietary Style</div>
+        <div style="margin-bottom:16px;">
+          ${DIETARY.map(d => chip(d.replace(/_/g,' '), d, 'dietary', (Prefs.data.dietary||[]).includes(d))).join('')}
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--danger);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;">Allergies</div>
+        <div style="margin-bottom:16px;">
+          ${ALLERGENS.map(a => chip(a.replace(/_/g,' '), a, 'allergies', (Prefs.data.allergies||[]).includes(a))).join('')}
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;">I Don't Like</div>
+        <div style="margin-bottom:12px;" id="dislikes-chips">
+          ${(Prefs.data.dislikes||[]).map(d => `<div style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;font-size:12px;border:1.5px solid var(--accent);background:rgba(232,245,78,.12);color:var(--accent);margin:4px;">
+            ${d} <span onclick="Prefs.removeDislike('${d}')" style="cursor:pointer;color:var(--danger);font-weight:700;">×</span>
+          </div>`).join('')}
+          <div style="display:inline-flex;align-items:center;gap:6px;margin:4px;">
+            <input id="dislike-input" type="text" placeholder="Add food..." style="border:1.5px solid var(--border);background:var(--bg3);color:var(--text);border-radius:20px;padding:7px 14px;font-size:12px;width:130px;outline:none;"
+              onkeydown="if(event.key==='Enter')Prefs.addDislike()">
+            <button onclick="Prefs.addDislike()" style="padding:7px 12px;background:var(--bg3);border:1.5px solid var(--border);border-radius:20px;color:var(--muted);font-size:12px;cursor:pointer;">+</button>
+          </div>
+        </div>
+        <button onclick="Prefs.save()" class="btn btn-primary">Save Preferences</button>
+      </div>`;
+  },
+
+  toggle(group, val, el) {
+    const arr = Prefs.data[group] || [];
+    const idx = arr.indexOf(val);
+    if (idx === -1) { arr.push(val); } else { arr.splice(idx, 1); }
+    Prefs.data[group] = arr;
+    const active = arr.includes(val);
+    el.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+    el.style.background  = active ? 'rgba(232,245,78,.12)' : 'var(--bg3)';
+    el.style.color       = active ? 'var(--accent)' : 'var(--muted)';
+    el.innerHTML         = (active ? '✓ ' : '') + val.replace(/_/g,' ');
+  },
+
+  addDislike() {
+    const inp = document.getElementById('dislike-input');
+    const val = inp.value.trim().toLowerCase();
+    if (!val) return;
+    Prefs.data.dislikes = Prefs.data.dislikes || [];
+    if (!Prefs.data.dislikes.includes(val)) Prefs.data.dislikes.push(val);
+    inp.value = '';
+    Prefs.refreshDislikeChips();
+  },
+
+  removeDislike(val) {
+    Prefs.data.dislikes = (Prefs.data.dislikes || []).filter(d => d !== val);
+    Prefs.refreshDislikeChips();
+  },
+
+  refreshDislikeChips() {
+    const el = document.getElementById('dislikes-chips');
+    if (!el) return;
+    const inp = el.querySelector('div:last-child');
+    el.innerHTML = (Prefs.data.dislikes || []).map(d =>
+      `<div style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;font-size:12px;border:1.5px solid var(--accent);background:rgba(232,245,78,.12);color:var(--accent);margin:4px;">
+        ${d} <span onclick="Prefs.removeDislike('${d}')" style="cursor:pointer;color:var(--danger);font-weight:700;">×</span>
+      </div>`).join('') +
+      `<div style="display:inline-flex;align-items:center;gap:6px;margin:4px;">
+        <input id="dislike-input" type="text" placeholder="Add food..." style="border:1.5px solid var(--border);background:var(--bg3);color:var(--text);border-radius:20px;padding:7px 14px;font-size:12px;width:130px;outline:none;" onkeydown="if(event.key==='Enter')Prefs.addDislike()">
+        <button onclick="Prefs.addDislike()" style="padding:7px 12px;background:var(--bg3);border:1.5px solid var(--border);border-radius:20px;color:var(--muted);font-size:12px;cursor:pointer;">+</button>
+      </div>`;
+  },
+
+  async save() {
+    try {
+      await Promise.all([
+        api('POST', '/preferences/allergies', { allergies: Prefs.data.allergies || [] }),
+        api('POST', '/preferences/dietary',   { dietary:   Prefs.data.dietary   || [] }),
+        api('POST', '/preferences/dislikes',  { dislikes:  Prefs.data.dislikes  || [] }),
+      ]);
+      Toast.show('✅ Preferences saved!', 'success');
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+};
+
+// ─── SUBSCRIPTION MANAGER ─────────────────────────────────────────────────────
+const SubManager = {
+  async load(subId) {
+    try {
+      const res = await api('GET', `/subscriptions/${subId}/details`);
+      if (!res.success) return;
+      const { subscription: s, days_until_billing, can_pause, can_resume, can_cancel } = res.data;
+
+      const statusColor = { ACTIVE:'var(--success)', PAUSED:'var(--warn)', CANCELLED:'var(--danger)' };
+      return `
+        <div class="card" style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+            <div>
+              <div style="font-weight:700;font-size:15px;">${s.plan_name}</div>
+              <div style="font-size:12px;color:var(--muted);">${s.meals_per_day} meals/day · ₹${s.price_inr}</div>
+            </div>
+            <div style="font-family:var(--font-head);font-weight:700;font-size:13px;color:${statusColor[s.status]||'var(--muted)'};">${s.status}</div>
+          </div>
+          ${days_until_billing !== null ? `<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Next billing in ${days_until_billing} days</div>` : ''}
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${can_pause  ? `<button onclick="SubManager.pause('${s.id}')"  class="btn btn-ghost btn-sm">⏸ Pause</button>` : ''}
+            ${can_resume ? `<button onclick="SubManager.resume('${s.id}')" class="btn btn-ghost btn-sm">▶ Resume</button>` : ''}
+            ${can_pause  ? `<button onclick="SubManager.skip('${s.id}')"   class="btn btn-ghost btn-sm">⏭ Skip Day</button>` : ''}
+            ${can_pause  ? `<button onclick="SubManager.changeMeals('${s.id}','${s.meals_per_day}')" class="btn btn-ghost btn-sm">🍽 Change Plan</button>` : ''}
+            ${can_cancel ? `<button onclick="SubManager.cancel('${s.id}')" class="btn btn-danger btn-sm">Cancel</button>` : ''}
+          </div>
+        </div>`;
+    } catch { return ''; }
+  },
+
+  async pause(id) {
+    const from  = prompt('Pause from date (YYYY-MM-DD):');
+    const until = prompt('Pause until date (YYYY-MM-DD):');
+    if (!from || !until) return;
+    try {
+      const res = await api('PUT', `/subscriptions/${id}/pause`, { pause_from_date: from, pause_until_date: until });
+      if (res.success) { Toast.show('⏸ Subscription paused', 'success'); Kitchen.loadOrders(); }
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  async resume(id) {
+    try {
+      const res = await api('PUT', `/subscriptions/${id}/resume`);
+      if (res.success) { Toast.show('▶ Subscription resumed', 'success'); Kitchen.loadOrders(); }
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  async skip(id) {
+    const date = prompt('Skip delivery on date (YYYY-MM-DD):') || new Date().toISOString().split('T')[0];
+    try {
+      const res = await api('POST', `/subscriptions/${id}/skip`, { date });
+      if (res.success) Toast.show(`⏭ Delivery on ${date} skipped`, 'success');
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  async changeMeals(id, current) {
+    const n = parseInt(prompt(`Current: ${current} meals/day. New value (1-5):`));
+    if (!n || n < 1 || n > 5) return;
+    try {
+      const res = await api('PATCH', `/subscriptions/${id}/meals-per-day`, { meals_per_day: n });
+      if (res.success) Toast.show(res.message, 'success');
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  async cancel(id) {
+    if (!confirm('Cancel this subscription?')) return;
+    try {
+      const res = await api('PUT', `/subscriptions/${id}/cancel`);
+      if (res.success) { Toast.show('Subscription cancelled', 'success'); Kitchen.loadOrders(); }
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+};
+
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="/phase1b.js"></script>

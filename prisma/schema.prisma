@@ -174,6 +174,9 @@ model User {
   leaderboard_entries Leaderboard[]
   vision_logs        VisionLog[]
   sync_queue         SyncQueue[]
+  preferences        UserPreferences?
+  weight_history     WeightHistory[]
+  body_measurements  BodyMeasurement[]
   running_segments   SegmentTime[]
 
   @@index([email])
@@ -984,4 +987,53 @@ model SyncQueue {
   user User @relation(fields: [user_id], references: [id])
 
   @@index([user_id, synced])
+}
+
+// ─────────────────────────────────────────────
+// PHASE 2C ADDITIONS
+// ─────────────────────────────────────────────
+
+model UserPreferences {
+  id         String   @id @default(uuid())
+  user_id    String   @unique
+  allergies  Json     @default("[]") // ['PEANUTS','DAIRY','GLUTEN','EGGS','SHELLFISH']
+  dietary    Json     @default("[]") // ['VEGETARIAN','VEGAN','KETO','PALEO','DIABETIC']
+  dislikes   Json     @default("[]") // ['mushrooms','cilantro','coconut']
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model WeightHistory {
+  id         String   @id @default(uuid())
+  user_id    String
+  weight_kg  Float
+  date       DateTime @db.Date
+  notes      String?
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([user_id, date])
+}
+
+model BodyMeasurement {
+  id           String   @id @default(uuid())
+  user_id      String
+  date         DateTime @db.Date
+  chest_cm     Float?
+  waist_cm     Float?
+  hips_cm      Float?
+  arms_cm      Float?
+  thighs_cm    Float?
+  body_fat_pct Float?
+  created_at   DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
 }
