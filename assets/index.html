@@ -2013,12 +2013,15 @@ const Profile = {
           <button class="btn btn-ghost" onclick="Tracker.openMeasurements()">📏 Log Measurements</button>
           <button class="btn btn-ghost" onclick="Tracker.load()">📊 Progress Analytics</button>
           <button class="btn btn-ghost" onclick="Prefs.load()">🥗 Dietary Preferences</button>
+          <button class="btn btn-ghost" onclick="Wearables.load();document.getElementById('wearables-section').scrollIntoView()">⌚ Wearables</button>
+          <button class="btn btn-ghost" onclick="Sms.sendDayClose()">📱 Send Day Summary SMS</button>
           <button class="btn btn-danger" onclick="Auth.logout()">🚪 Logout</button>
         </div>
 
         <div id="progress-section"></div>
         <div id="weight-section"></div>
         <div id="prefs-section"></div>
+        <div id="wearables-section"></div>
       `;
     } catch (e) {
       document.getElementById('profile-content').innerHTML = `
@@ -2444,6 +2447,226 @@ const SubManager = {
   },
 };
 
+
+// ─────────────────────────────────────────────────────────
+// SPRINT 3 — Payments + Wearables + SMS
+// ─────────────────────────────────────────────────────────
+
+// ── PAYMENT MODULE ────────────────────────────────────────
+const Payments = {
+  scriptLoaded: false,
+
+  async loadRazorpay() {
+    if (this.scriptLoaded) return true;
+    return new Promise(resolve => {
+      const s = document.createElement('script');
+      s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      s.onload  = () => { this.scriptLoaded = true; resolve(true); };
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+  },
+
+  async payForOrder(orderId, amountInr) {
+    const loaded = await Payments.loadRazorpay();
+    if (!loaded) { Toast.show('Razorpay could not load. Check connection.', 'error'); return; }
+
+    Toast.show('Creating payment order...', 'info');
+    try {
+      const res = await api('POST', '/payments/order', { kitchen_order_id: orderId, amount_inr: amountInr });
+      if (!res.success) { Toast.show(res.message || 'Payment setup failed', 'error'); return; }
+
+      const { razorpay_order_id, amount_paise, key_id, prefill } = res.data;
+
+      const options = {
+        key:         key_id,
+        amount:      amount_paise,
+        currency:    'INR',
+        name:        'FitFuel',
+        description: 'Kitchen Order',
+        order_id:    razorpay_order_id,
+        prefill:     prefill || {},
+        theme:       { color: '#e8f54e' },
+        handler: async (response) => {
+          const verifyRes = await api('POST', '/payments/verify', {
+            razorpay_order_id:   response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature:  response.razorpay_signature,
+          });
+          if (verifyRes.success) {
+            Toast.show('✅ Payment successful! Order confirmed.', 'success');
+            Kitchen.loadOrders();
+          } else {
+            Toast.show('Payment verification failed. Contact support.', 'error');
+          }
+        },
+        modal: {
+          ondismiss: () => Toast.show('Payment cancelled', 'info'),
+        },
+      };
+
+      const rz = new window.Razorpay(options);
+      rz.open();
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  async payForSubscription(subId) {
+    const loaded = await Payments.loadRazorpay();
+    if (!loaded) { Toast.show('Razorpay could not load', 'error'); return; }
+
+    try {
+      const res = await api('POST', '/payments/subscription', { subscription_id: subId });
+      if (!res.success) { Toast.show(res.message || 'Payment setup failed', 'error'); return; }
+
+      const { razorpay_order_id, amount_paise, key_id, plan_name } = res.data;
+
+      const options = {
+        key:         key_id,
+        amount:      amount_paise,
+        currency:    'INR',
+        name:        'FitFuel',
+        description: plan_name,
+        order_id:    razorpay_order_id,
+        theme:       { color: '#e8f54e' },
+        handler: async (response) => {
+          const verifyRes = await api('POST', '/payments/verify', {
+            razorpay_order_id:   response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature:  response.razorpay_signature,
+          });
+          if (verifyRes.success) {
+            Toast.show(`✅ ${plan_name} subscription renewed!`, 'success');
+            Kitchen.loadOrders();
+          } else {
+            Toast.show('Payment failed. Try again.', 'error');
+          }
+        },
+      };
+      new window.Razorpay(options).open();
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  async getHistory() {
+    try {
+      const res = await api('GET', '/payments/history');
+      if (!res.success) return;
+      const { payments, total_spent_inr } = res.data;
+      return { payments, total_spent_inr };
+    } catch { return null; }
+  },
+};
+
+// ── WEARABLES MODULE ──────────────────────────────────────
+const Wearables = {
+  async load() {
+    const el = document.getElementById('wearables-section');
+    if (!el) return;
+
+    try {
+      const [devicesRes, dataRes] = await Promise.all([
+        api('GET', '/wearables'),
+        api('GET', '/wearables/data'),
+      ]);
+
+      const devices = devicesRes.data?.devices || [];
+      const available = devicesRes.data?.available_to_add || [];
+      const merged = dataRes.data?.merged || {};
+      const deviceEmoji = { FITBIT:'⌚', GOOGLE_FIT:'🏃', GARMIN:'🗺️', APPLE_WATCH:'🍎', SAMSUNG:'📱' };
+
+      el.innerHTML = `
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">⌚ Connected Wearables</div>
+
+          ${merged.steps || merged.sleep_hours || merged.heart_rate_avg ? `
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;">
+            ${merged.steps          ? `<div class="profile-stat"><div class="profile-stat-val" style="color:var(--accent);">${merged.steps.toLocaleString('en-IN')}</div><div class="profile-stat-label">Steps Today</div></div>` : ''}
+            ${merged.sleep_hours    ? `<div class="profile-stat"><div class="profile-stat-val" style="color:var(--accent3);">${merged.sleep_hours}h</div><div class="profile-stat-label">Sleep</div></div>` : ''}
+            ${merged.heart_rate_avg ? `<div class="profile-stat"><div class="profile-stat-val" style="color:var(--danger);">${merged.heart_rate_avg}</div><div class="profile-stat-label">Resting HR</div></div>` : ''}
+            ${merged.calories_burned? `<div class="profile-stat"><div class="profile-stat-val" style="color:#ff6b35;">${Math.round(merged.calories_burned)}</div><div class="profile-stat-label">kcal Burned</div></div>` : ''}
+          </div>` : '<div style="font-size:13px;color:var(--muted);margin-bottom:12px;">No wearable data yet. Connect a device below.</div>'}
+
+          ${devices.map(d => `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="font-size:24px;">${deviceEmoji[d.device_type] || '⌚'}</div>
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:13px;">${d.device_type.replace(/_/g,' ')}</div>
+              <div style="font-size:11px;color:${d.sync_status === 'synced' ? 'var(--success)' : 'var(--muted)'};">
+                ${d.sync_status === 'synced' ? '✅ Synced' : '⏳ Pending'}
+                ${d.last_sync ? ' · ' + new Date(d.last_sync).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) : ''}
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button onclick="Wearables.sync('${d.device_type}')" style="padding:6px 12px;background:rgba(232,245,78,.1);border:1px solid rgba(232,245,78,.2);border-radius:6px;color:var(--accent);font-size:11px;cursor:pointer;">🔄 Sync</button>
+              <button onclick="Wearables.disconnect('${d.device_type}')" style="padding:6px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--danger);font-size:11px;cursor:pointer;">✕</button>
+            </div>
+          </div>`).join('')}
+
+          ${available.length ? `
+          <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin:12px 0 8px;">Add Device</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${available.map(d => `<button onclick="Wearables.connect('${d}')" style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;cursor:pointer;">
+              ${deviceEmoji[d] || '⌚'} ${d.replace(/_/g,' ')}
+            </button>`).join('')}
+          </div>` : ''}
+        </div>`;
+    } catch(e) {
+      const el2 = document.getElementById('wearables-section');
+      if (el2) el2.innerHTML = '';
+    }
+  },
+
+  async connect(deviceType) {
+    try {
+      const res = await api('GET', `/wearables/oauth/${deviceType}`);
+      if (res.success && res.data.oauth_url) {
+        window.location.href = res.data.oauth_url;
+      } else {
+        Toast.show(res.message || 'OAuth not configured for this device', 'error');
+      }
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  async sync(deviceType) {
+    Toast.show(`Syncing ${deviceType}...`, 'info');
+    try {
+      const res = await api('POST', `/wearables/sync/${deviceType}`);
+      if (res.success) {
+        Toast.show(`✅ Synced ${res.data.synced.records} records`, 'success');
+        Wearables.load();
+      } else {
+        Toast.show(res.message || 'Sync failed', 'error');
+      }
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  async disconnect(deviceType) {
+    if (!confirm(`Disconnect ${deviceType}?`)) return;
+    try {
+      const res = await api('DELETE', `/wearables/${deviceType}`);
+      if (res.success) { Toast.show(`${deviceType} disconnected`, 'success'); Wearables.load(); }
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+};
+
+// ── SMS MODULE ────────────────────────────────────────────
+const Sms = {
+  async sendDayClose() {
+    try {
+      const res = await api('POST', '/sms/day-close');
+      if (res.success) Toast.show('📱 Day-close summary SMS sent!', 'success');
+      else Toast.show(res.message || 'SMS failed', 'error');
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  async sendRenewal(subId) {
+    try {
+      const res = await api('POST', `/sms/renewal/${subId}`);
+      if (res.success) Toast.show('📱 Renewal reminder sent!', 'success');
+      else Toast.show(res.message || 'SMS failed', 'error');
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+};
+
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="/phase1b.js"></script>
@@ -2719,6 +2942,11 @@ const Kitchen = {
       });
       if (res.success) {
         Toast.show(`✅ Order placed! ₹${total}. ETA 45 min.`, 'success');
+        // Offer payment
+        setTimeout(() => {
+          const payNow = confirm(`Pay ₹${total} now via UPI/Card?`);
+          if (payNow && res.data.order?.id) Payments.payForOrder(res.data.order.id, total);
+        }, 800);
         Kitchen.cart = [];
         Kitchen.renderMeals();
         Kitchen.updateCartBadge();

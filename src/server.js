@@ -68,6 +68,12 @@ async function bootstrap() {
     await prisma.$queryRaw`SELECT 1`;
     dbReady = true;
     console.log('[server] ✅ PostgreSQL connected');
+
+    // Start background jobs (cron)
+    try {
+      const { startScheduler } = require('./utils/scheduler');
+      startScheduler();
+    } catch (e) { console.warn('[server] Scheduler init failed:', e.message); }
   } catch (err) {
     console.error('[server] ⚠️  DB connect failed:', err.message);
   }

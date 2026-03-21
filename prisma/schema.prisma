@@ -175,6 +175,8 @@ model User {
   vision_logs        VisionLog[]
   sync_queue         SyncQueue[]
   preferences        UserPreferences?
+  payments           Payment[]
+  sms_logs           SmsLog[]
   weight_history     WeightHistory[]
   body_measurements  BodyMeasurement[]
   running_segments   SegmentTime[]
@@ -1036,4 +1038,53 @@ model BodyMeasurement {
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
+}
+
+// ─────────────────────────────────────────────
+// SPRINT 3 ADDITIONS
+// ─────────────────────────────────────────────
+
+model Payment {
+  id              String        @id @default(uuid())
+  user_id         String
+  order_id        String?       // kitchen order
+  subscription_id String?
+  razorpay_order_id   String    @unique
+  razorpay_payment_id String?
+  razorpay_signature  String?
+  amount_inr      Float
+  currency        String        @default("INR")
+  status          PaymentStatus @default(CREATED)
+  method          String?       // upi, card, netbanking
+  description     String?
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([razorpay_order_id])
+}
+
+model SmsLog {
+  id          String   @id @default(uuid())
+  user_id     String
+  phone       String
+  template_id String?
+  message     String
+  status      String   @default("QUEUED") // QUEUED, SENT, FAILED
+  provider    String   @default("MSG91")
+  created_at  DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+}
+
+enum PaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
 }
