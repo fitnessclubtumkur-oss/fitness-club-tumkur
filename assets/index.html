@@ -1667,23 +1667,82 @@ const Meal = {
     const qty  = parseFloat(document.getElementById('modal-qty').value);
     if (!food || !qty) return;
 
-    // Close modal IMMEDIATELY — before any async work
+    // Close modal IMMEDIATELY
     UI.closeModal('modal-food');
+    const foodName = food.name;
+    const foodId   = food.id;
+    const mealType = State.selectedMealType;
     State.selectedFood = null;
     document.getElementById('food-search').value = '';
     document.getElementById('food-search-results').innerHTML = '';
 
+    // Optimistic UI — inject item instantly before API responds
+    Meal.addOptimisticItem(foodName, qty, food, mealType);
+    Toast.show(`✅ ${foodName} logged!`, 'success');
+
     try {
       const today = new Date().toISOString().split('T')[0];
       await api('POST', '/meals', {
-        food_id: food.id, meal_type: State.selectedMealType,
+        food_id: foodId, meal_type: mealType,
         date: today, quantity_raw: qty,
       });
-      Toast.show(`✅ ${food.name} logged!`, 'success');
+      // Reload to get real IDs for delete buttons
       await Meal.loadToday();
       if (State.currentTab === 'dashboard') await Dashboard.load();
     } catch (e) {
       Toast.show(e.message || 'Log failed', 'error');
+      await Meal.loadToday(); // restore on error
+    }
+  },
+
+  addOptimisticItem(name, qty, food, mealType) {
+    const el = document.getElementById('meals-today-list');
+    if (!el) return;
+    const mealTypeEmoji = { BREAKFAST:'🍳', LUNCH:'🥘', SNACK:'🍎', DINNER:'🌙', PRE_WORKOUT:'⚡', POST_WORKOUT:'💪' };
+    const cal = ((food.calories || 0) * qty / 100).toFixed(0);
+    const prot = ((food.protein_g || 0) * qty / 100).toFixed(1);
+    const carb = ((food.carbs_g || 0) * qty / 100).toFixed(1);
+    const fat  = ((food.fats_g  || 0) * qty / 100).toFixed(1);
+
+    // Check if section for this mealType already exists
+    let section = el.querySelector(`[data-meal-type="${mealType}"]`);
+    if (!section) {
+      section = document.createElement('div');
+      section.setAttribute('data-meal-type', mealType);
+      section.style.marginBottom = '16px';
+      section.innerHTML = `<div style="font-family:var(--font-head);font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;">${mealTypeEmoji[mealType]||''} ${mealType.replace(/_/g,' ')}</div>`;
+      // Remove empty state if present
+      const empty = el.querySelector('.empty');
+      if (empty) empty.remove();
+      el.appendChild(section);
+    }
+
+    const item = document.createElement('div');
+    item.className = 'food-item';
+    item.style.gap = '8px';
+    item.setAttribute('data-optimistic', 'true');
+    item.innerHTML = `
+      <div style="flex:1;">
+        <div class="food-name">${name}</div>
+        <div class="food-macro">${qty}g · ${prot}g P · ${carb}g C · ${fat}g F</div>
+      </div>
+      <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <div class="food-cal">${cal} <span class="food-qty">kcal</span></div>
+        <span style="font-size:11px;color:var(--muted);">saving...</span>
+      </div>`;
+    section.appendChild(item);
+
+    // Update total
+    const totalEl = document.getElementById('meals-total-today');
+    if (totalEl) {
+      const parts = totalEl.textContent.match(/([\d.]+) kcal · ([\d.]+)g protein/);
+      if (parts) {
+        const newCal = (parseFloat(parts[1]) + parseFloat(cal)).toFixed(0);
+        const newProt = (parseFloat(parts[2]) + parseFloat(prot)).toFixed(0);
+        totalEl.textContent = `${newCal} kcal · ${newProt}g protein`;
+      } else {
+        totalEl.textContent = `${cal} kcal · ${prot}g protein`;
+      }
     }
   },
 
@@ -1720,11 +1779,36 @@ const Meal = {
               </div>
               <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
                 <div class="food-cal">${m.calories.toFixed(0)} <span class="food-qty">kcal</span></div>
-                <button onclick="Meal.deleteItem('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:11px;cursor:pointer;padding:2px 4px;font-family:var(--font-head);font-weight:700;letter-spacing:.5px;">✕ DELETE</button>
+                <div style="display:flex; gap:8px;">
+                  <button onclick="Meal.editItem('${m.id}','${m.food?.name || ''}',${m.quantity_raw})" style="background:none;border:none;color:var(--accent);font-size:11px;cursor:pointer;padding:2px 4px;font-family:var(--font-head);font-weight:700;letter-spacing:.5px;">✎ EDIT</button>
+                  <button onclick="Meal.deleteItem('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:11px;cursor:pointer;padding:2px 4px;font-family:var(--font-head);font-weight:700;letter-spacing:.5px;">✕ DEL</button>
+                </div>
               </div>
             </div>`).join('')}
         </div>`).join('');
     } catch {}
+  },
+
+  editItem(id, name, currentQty) {
+    const newQty = prompt(`Edit quantity for ${name} (grams):`, currentQty);
+    if (!newQty || isNaN(newQty) || parseFloat(newQty) <= 0) return;
+    const qty = parseFloat(newQty);
+    // Optimistic update
+    const el = document.querySelector(`[data-meal-id="${id}"]`);
+    if (el) {
+      const macroEl = el.querySelector('.food-macro');
+      if (macroEl) macroEl.textContent = `${qty}g · updating...`;
+    }
+    api('PUT', `/meals/${id}`, { quantity_raw: qty })
+      .then(() => {
+        Toast.show(`Updated to ${qty}g ✓`, 'success');
+        Meal.loadToday();
+        if (State.currentTab === 'dashboard') Dashboard.load();
+      })
+      .catch(e => {
+        Toast.show(e.message || 'Update failed', 'error');
+        Meal.loadToday();
+      });
   },
 
   async deleteItem(id) {
