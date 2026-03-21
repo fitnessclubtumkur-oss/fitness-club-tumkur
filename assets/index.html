@@ -1658,22 +1658,23 @@ const Meal = {
     const qty  = parseFloat(document.getElementById('modal-qty').value);
     if (!food || !qty) return;
 
+    // Close modal IMMEDIATELY — before any async work
+    UI.closeModal('modal-food');
+    State.selectedFood = null;
+    document.getElementById('food-search').value = '';
+    document.getElementById('food-search-results').innerHTML = '';
+
     try {
       const today = new Date().toISOString().split('T')[0];
-      const res = await api('POST', '/meals', {
+      await api('POST', '/meals', {
         food_id: food.id, meal_type: State.selectedMealType,
         date: today, quantity_raw: qty,
       });
-      // Close modal and refresh regardless — API logged it
-      UI.closeModal('modal-food');
-      State.selectedFood = null;
-      document.getElementById('food-search').value = '';
-      document.getElementById('food-search-results').innerHTML = '';
       Toast.show(`✅ ${food.name} logged!`, 'success');
-      Meal.loadToday();
-      if (State.currentTab === 'dashboard') Dashboard.load();
+      await Meal.loadToday();
+      if (State.currentTab === 'dashboard') await Dashboard.load();
     } catch (e) {
-      Toast.show(e.message, 'error');
+      Toast.show(e.message || 'Log failed', 'error');
     }
   },
 
@@ -1703,14 +1704,14 @@ const Meal = {
             ${mealTypeEmoji[type] || ''} ${type.replace(/_/g,' ')}
           </div>
           ${meals.map(m => `
-            <div class="food-item" style="gap:8px;">
+            <div class="food-item" style="gap:8px;" data-meal-id="${m.id}">
               <div style="flex:1;">
                 <div class="food-name">${m.food?.name || 'Unknown'}</div>
                 <div class="food-macro">${m.quantity_raw}g · ${m.protein_g.toFixed(1)}g P · ${m.carbs_g.toFixed(1)}g C · ${m.fats_g.toFixed(1)}g F</div>
               </div>
               <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
                 <div class="food-cal">${m.calories.toFixed(0)} <span class="food-qty">kcal</span></div>
-                <button onclick="Meal.deleteItem('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:11px;cursor:pointer;padding:0;font-family:var(--font-head);font-weight:700;">✕ DELETE</button>
+                <button onclick="Meal.deleteItem('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:11px;cursor:pointer;padding:2px 4px;font-family:var(--font-head);font-weight:700;letter-spacing:.5px;">✕ DELETE</button>
               </div>
             </div>`).join('')}
         </div>`).join('');
@@ -1719,13 +1720,17 @@ const Meal = {
 
   async deleteItem(id) {
     if (!confirm('Delete this entry?')) return;
+    // Remove from DOM immediately for instant feedback
+    const el = document.querySelector(`[data-meal-id="${id}"]`);
+    if (el) el.remove();
     try {
       await api('DELETE', `/meals/${id}`);
-      Toast.show('Deleted', 'success');
-      Meal.loadToday();
-      if (State.currentTab === 'dashboard') Dashboard.load();
+      Toast.show('Deleted ✓', 'success');
+      await Meal.loadToday();
+      if (State.currentTab === 'dashboard') await Dashboard.load();
     } catch (e) {
       Toast.show(e.message || 'Delete failed', 'error');
+      await Meal.loadToday(); // restore on error
     }
   },
 
