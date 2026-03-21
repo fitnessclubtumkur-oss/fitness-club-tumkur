@@ -21,6 +21,7 @@ const nutritionRoutes    = require("./routes/nutrition.routes");
 const syncRoutes         = require("./routes/sync.routes");
 const kitchenRoutes      = require('./routes/kitchen.routes');
 const gamificationRoutes = require('./routes/gamification.routes');
+const aiRoutes            = require('./routes/ai.routes');
 const { healthCheck }    = require('./controllers/dashboard.controller');
 
 const app = express();
@@ -102,6 +103,7 @@ app.use('/api/nutrition', nutritionRoutes);
 app.use('/api',           syncRoutes);
 app.use('/api',           kitchenRoutes);
 app.use('/api',           gamificationRoutes);
+app.use('/api',           aiRoutes);
 
 // ─── Serve PWA frontend ───────────────────────────────────────────────────────
 const path = require('path');

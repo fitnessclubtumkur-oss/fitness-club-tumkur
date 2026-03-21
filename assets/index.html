@@ -698,6 +698,88 @@ html, body {
       </div>
     </div>
 
+    <!-- ── AI COACH TAB ─────────────────────────────── -->
+    <div class="tab-view" id="tab-ai">
+      <div style="padding-top:16px;">
+
+        <!-- Hero banner -->
+        <div style="background:linear-gradient(135deg,#0d0a1a,#0a0818);border:1px solid #2a1a5a;border-radius:var(--radius);padding:20px;margin-bottom:16px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(162,105,255,.15) 0%,transparent 70%);pointer-events:none;"></div>
+          <div style="font-family:var(--font-head);font-size:22px;font-weight:800;color:#a269ff;margin-bottom:4px;">🤖 AI Coach</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">Powered by Claude · Personalised to your data</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button onclick="AICoach.generateInsight()" id="gen-insight-btn" style="padding:12px 18px;background:rgba(162,105,255,.2);border:1px solid rgba(162,105,255,.4);border-radius:10px;color:#a269ff;font-family:var(--font-head);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.3px;">✨ Weekly Story</button>
+            <button onclick="AICoach.openPhotoMeal()" style="padding:12px 18px;background:rgba(78,205,196,.12);border:1px solid rgba(78,205,196,.3);border-radius:10px;color:var(--accent3);font-family:var(--font-head);font-size:13px;font-weight:700;cursor:pointer;">📸 Photo Log</button>
+          </div>
+        </div>
+
+        <!-- Sub-tabs -->
+        <div class="chips" id="ai-tabs" style="margin-bottom:16px;">
+          <div class="chip active" onclick="AICoach.switchTab('insights')">✨ Insights</div>
+          <div class="chip" onclick="AICoach.switchTab('recipes')">📖 Recipes</div>
+          <div class="chip" onclick="AICoach.switchTab('mood')">🧠 Wellbeing</div>
+        </div>
+
+        <!-- Insights view -->
+        <div id="ai-insights-view">
+          <div id="ai-insight-content">
+            <div class="empty"><div class="empty-icon">✨</div><div class="empty-text">Tap "Weekly Story" to get your AI fitness narrative.<br><br>Requires CLAUDE_API_KEY in Railway Variables.</div></div>
+          </div>
+        </div>
+
+        <!-- Recipes view -->
+        <div id="ai-recipes-view" style="display:none;">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            <button onclick="AICoach.showMyRecipes()" id="btn-my-recipes" class="btn btn-primary btn-sm">My Recipes</button>
+            <button onclick="AICoach.showCommunityRecipes()" id="btn-community" class="btn btn-ghost btn-sm">Community</button>
+            <button onclick="AICoach.showSaveRecipeModal()" class="btn btn-ghost btn-sm" style="margin-left:auto;">+ Save Recipe</button>
+          </div>
+          <div id="recipes-content"><div class="empty"><div class="empty-text">Loading...</div></div></div>
+        </div>
+
+        <!-- Wellbeing view -->
+        <div id="ai-mood-view" style="display:none;">
+          <div class="card" style="margin-bottom:12px;">
+            <div class="card-title">How are you today?</div>
+
+            <div style="margin-bottom:16px;">
+              <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;">Mood</div>
+              <div style="display:flex;justify-content:space-between;">
+                <button onclick="AICoach.setMood(1,this)" data-mood="1" class="mood-btn" style="font-size:28px;background:none;border:2px solid transparent;border-radius:8px;padding:6px 8px;cursor:pointer;">😴</button>
+                <button onclick="AICoach.setMood(2,this)" data-mood="2" class="mood-btn" style="font-size:28px;background:none;border:2px solid transparent;border-radius:8px;padding:6px 8px;cursor:pointer;">😐</button>
+                <button onclick="AICoach.setMood(3,this)" data-mood="3" class="mood-btn" style="font-size:28px;background:none;border:2px solid transparent;border-radius:8px;padding:6px 8px;cursor:pointer;">😊</button>
+                <button onclick="AICoach.setMood(4,this)" data-mood="4" class="mood-btn" style="font-size:28px;background:none;border:2px solid transparent;border-radius:8px;padding:6px 8px;cursor:pointer;">😄</button>
+                <button onclick="AICoach.setMood(5,this)" data-mood="5" class="mood-btn" style="font-size:28px;background:none;border:2px solid transparent;border-radius:8px;padding:6px 8px;cursor:pointer;">🔥</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Sleep Hours: <span id="sleep-val">7.5</span>h</label>
+              <input type="range" id="sleep-slider" min="4" max="12" step="0.5" value="7.5"
+                oninput="document.getElementById('sleep-val').textContent=this.value"
+                style="width:100%;accent-color:var(--accent);">
+            </div>
+
+            <div style="margin-bottom:16px;">
+              <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;">Stress Level</div>
+              <div style="display:flex;gap:6px;">
+                <button onclick="AICoach.setStress(1,this)" data-stress="1" class="stress-btn" style="flex:1;font-size:18px;background:var(--bg3);border:1.5px solid var(--border);border-radius:6px;padding:7px;cursor:pointer;">😌</button>
+                <button onclick="AICoach.setStress(2,this)" data-stress="2" class="stress-btn" style="flex:1;font-size:18px;background:var(--bg3);border:1.5px solid var(--border);border-radius:6px;padding:7px;cursor:pointer;">🙂</button>
+                <button onclick="AICoach.setStress(3,this)" data-stress="3" class="stress-btn" style="flex:1;font-size:18px;background:var(--bg3);border:1.5px solid var(--border);border-radius:6px;padding:7px;cursor:pointer;">😐</button>
+                <button onclick="AICoach.setStress(4,this)" data-stress="4" class="stress-btn" style="flex:1;font-size:18px;background:var(--bg3);border:1.5px solid var(--border);border-radius:6px;padding:7px;cursor:pointer;">😤</button>
+                <button onclick="AICoach.setStress(5,this)" data-stress="5" class="stress-btn" style="flex:1;font-size:18px;background:var(--bg3);border:1.5px solid var(--border);border-radius:6px;padding:7px;cursor:pointer;">😰</button>
+              </div>
+            </div>
+
+            <button onclick="AICoach.logMood()" class="btn btn-primary">Save Today's Mood</button>
+          </div>
+          <div id="mood-insights-content"></div>
+        </div>
+
+      </div>
+    </div>
+
+
     <!-- ── SOCIAL TAB ──────────────────────────────── -->
     <div class="tab-view" id="tab-social">
       <div style="padding-top:16px;">
@@ -831,6 +913,9 @@ html, body {
     </button>
     <button class="nav-item" id="nav-nutrition" onclick="UI.showTab('nutrition')">
       <span class="nav-icon">🧬</span><span>Nutrients</span>
+    </button>
+    <button class="nav-item" id="nav-ai" onclick="UI.showTab('ai')">
+      <span class="nav-icon">🤖</span><span>AI Coach</span>
     </button>
     <button class="nav-item" id="nav-social" onclick="UI.showTab('social')">
       <span class="nav-icon">👥</span><span>Social</span>
@@ -987,6 +1072,7 @@ const UI = {
     if (tab === 'nutrition') Nutrition.loadToday();
     if (tab === 'kitchen') Kitchen.load();
     if (tab === 'social')  Social.load();
+    if (tab === 'ai')     AICoach.load();
   },
 
   authTab(tab) {
@@ -2704,6 +2790,308 @@ const Social = {
         }
       }
     } catch (e) { Toast.show(e.message, 'error'); }
+  },
+};
+
+
+// ─────────────────────────────────────────────────────────
+// AI COACH
+// ─────────────────────────────────────────────────────────
+const AICoach = {
+  moodVal:   null,
+  stressVal: null,
+  curTab:    'insights',
+
+  async load() { AICoach.switchTab(AICoach.curTab); },
+
+  switchTab(tab) {
+    AICoach.curTab = tab;
+    const views = { insights:'ai-insights-view', recipes:'ai-recipes-view', mood:'ai-mood-view' };
+    Object.values(views).forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+    const active = document.getElementById(views[tab]);
+    if (active) active.style.display = 'block';
+    document.querySelectorAll('#ai-tabs .chip').forEach(c => c.classList.remove('active'));
+    const labels = { insights:'✨ Insights', recipes:'📖 Recipes', mood:'🧠 Wellbeing' };
+    document.querySelectorAll('#ai-tabs .chip').forEach(c => { if(c.textContent===labels[tab]) c.classList.add('active'); });
+    if (tab === 'insights') AICoach.loadInsights();
+    if (tab === 'recipes')  AICoach.showMyRecipes();
+    if (tab === 'mood')     { AICoach.loadMoodInsights(); }
+  },
+
+  // ── Insights ──────────────────────────────────────────
+  async generateInsight() {
+    const btn = document.getElementById('gen-insight-btn');
+    btn.textContent = '⏳ Generating...'; btn.disabled = true;
+    try {
+      const res = await api('POST', '/insights/generate');
+      if (res.success) {
+        AICoach.renderInsights([res.data.insight]);
+        Toast.show(res.data.cached ? 'Loaded this week\'s story' : '✨ New insight ready!', 'success');
+        AICoach.curTab = 'insights';
+      } else {
+        Toast.show(res.message || 'Error generating insight', 'error');
+      }
+    } catch(e) { Toast.show(e.message, 'error'); }
+    finally { btn.textContent = '✨ Weekly Story'; btn.disabled = false; }
+  },
+
+  async loadInsights() {
+    try {
+      const res = await api('GET', '/insights');
+      const insights = (res.data && res.data.insights) || [];
+      AICoach.renderInsights(insights);
+    } catch {}
+  },
+
+  renderInsights(insights) {
+    const el = document.getElementById('ai-insight-content');
+    if (!insights || !insights.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">✨</div><div class="empty-text">No insights yet.<br>Tap "Weekly Story" above to generate one.</div></div>';
+      return;
+    }
+    const prioColor = { HIGH:'var(--danger)', MEDIUM:'var(--warn)', LOW:'var(--accent3)' };
+    el.innerHTML = insights.map(ins => {
+      const week = new Date(ins.week_of).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+      const recs  = Array.isArray(ins.recommendations) ? ins.recommendations : [];
+      return `<div class="card" style="margin-bottom:16px;background:rgba(162,105,255,.04);border-color:rgba(162,105,255,.2);">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-family:var(--font-head);font-size:12px;font-weight:700;color:#a269ff;text-transform:uppercase;letter-spacing:.5px;">Week of ${week}</div>
+          <div style="font-size:11px;color:var(--muted);">${new Date(ins.generated_at).toLocaleDateString('en-IN')}</div>
+        </div>
+        <div style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-line;margin-bottom:${recs.length?'16px':'0'}">${ins.narrative_text}</div>
+        ${recs.length ? `<div style="border-top:1px solid var(--border);padding-top:14px;">
+          <div style="font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">📋 Next Week Action Plan</div>
+          ${recs.map(r=>`<div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;">
+            <div style="width:8px;height:8px;border-radius:50%;background:${prioColor[r.priority]||'var(--muted)'};margin-top:5px;flex-shrink:0;"></div>
+            <div><div style="font-weight:600;font-size:13px;">${r.title}</div><div style="font-size:12px;color:var(--muted);">${r.detail}</div></div>
+          </div>`).join('')}
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  },
+
+  // ── Photo Meal ────────────────────────────────────────
+  openPhotoMeal() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*'; input.capture = 'camera';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 4 * 1024 * 1024) { Toast.show('Image too large. Use a photo under 4MB.', 'error'); return; }
+      Toast.show('📸 Analysing meal...', 'info');
+      try {
+        const base64 = await AICoach.toBase64(file);
+        const mediaType = file.type || 'image/jpeg';
+        const res = await api('POST', '/vision/analyze', { image_base64: base64, media_type: mediaType });
+        if (res.success) {
+          AICoach.showPhotoResults(res.data);
+          AICoach.curTab = 'insights';
+          document.querySelectorAll('#ai-tabs .chip').forEach(c=>c.classList.remove('active'));
+          document.querySelectorAll('#ai-tabs .chip')[0].classList.add('active');
+        } else {
+          Toast.show(res.message || 'Could not identify foods', 'error');
+        }
+      } catch(e) { Toast.show(e.message, 'error'); }
+    };
+    input.click();
+  },
+
+  toBase64(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result.split(',')[1]);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  },
+
+  showPhotoResults(data) {
+    const foods = data.matched_foods || [];
+    const today = new Date().toISOString().split('T')[0];
+    const el    = document.getElementById('ai-insight-content');
+    document.getElementById('ai-insights-view').style.display = 'block';
+    document.getElementById('ai-recipes-view').style.display  = 'none';
+    document.getElementById('ai-mood-view').style.display     = 'none';
+
+    el.innerHTML = `<div class="card" style="margin-bottom:16px;">
+      <div style="font-family:var(--font-head);font-size:15px;font-weight:800;margin-bottom:4px;">📸 Meal Identified</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">${data.meal_description || 'AI-identified foods'} · ${data.matched_count}/${data.total_identified} matched in database</div>
+      ${foods.map(f => `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">${f.identified_name}</div>
+          <div style="font-size:11px;color:var(--muted);">${f.quantity_g}g · ${f.food_match ? f.food_match.name : '⚠️ Not in database'} · ${Math.round(f.confidence*100)}% confidence</div>
+        </div>
+        ${f.estimated_nutrition ? `<div style="text-align:right;flex-shrink:0;"><div style="font-family:var(--font-head);font-weight:700;color:var(--accent);font-size:14px;">${f.estimated_nutrition.calories}</div><div style="font-size:10px;color:var(--muted);">kcal</div></div>` : '<div style="font-size:11px;color:var(--muted);">—</div>'}
+      </div>`).join('')}
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button onclick="AICoach.logPhotoFoods(${JSON.stringify(foods).replace(/"/g,'&quot;')},'${today}')" class="btn btn-primary" style="flex:1;">✅ Log All Matched Foods</button>
+        <button onclick="AICoach.loadInsights()" class="btn btn-ghost btn-sm">Cancel</button>
+      </div>
+    </div>`;
+  },
+
+  async logPhotoFoods(foods, date) {
+    let logged = 0;
+    const mealType = AICoach.guessMealType();
+    for (const f of foods) {
+      if (!f.food_match || !f.food_match.id) continue;
+      try {
+        await api('POST', '/meals', { food_id: f.food_match.id, meal_type: mealType, date, quantity_raw: f.quantity_g });
+        logged++;
+      } catch {}
+    }
+    Toast.show(logged ? `✅ ${logged} food(s) logged from photo!` : 'No matched foods to log', logged ? 'success' : 'error');
+    AICoach.loadInsights();
+    if (State.currentTab === 'dashboard') Dashboard.load();
+  },
+
+  guessMealType() {
+    const h = new Date().getHours();
+    if (h < 10) return 'BREAKFAST';
+    if (h < 14) return 'LUNCH';
+    if (h < 17) return 'SNACK';
+    return 'DINNER';
+  },
+
+  // ── Recipes ───────────────────────────────────────────
+  async showMyRecipes() {
+    const b1=document.getElementById('btn-my-recipes'), b2=document.getElementById('btn-community');
+    if(b1) b1.className='btn btn-primary btn-sm';
+    if(b2) b2.className='btn btn-ghost btn-sm';
+    try {
+      const res = await api('GET', '/recipes');
+      const recipes = (res.data && res.data.recipes) || [];
+      const el = document.getElementById('recipes-content');
+      el.innerHTML = recipes.length
+        ? recipes.map(r => AICoach.recipeCard(r, true)).join('')
+        : '<div class="empty"><div class="empty-icon">📖</div><div class="empty-text">No saved recipes yet.<br>Log a meal and save it as a recipe template.</div></div>';
+    } catch {}
+  },
+
+  async showCommunityRecipes() {
+    const b1=document.getElementById('btn-my-recipes'), b2=document.getElementById('btn-community');
+    if(b1) b1.className='btn btn-ghost btn-sm';
+    if(b2) b2.className='btn btn-primary btn-sm';
+    try {
+      const res = await api('GET', '/recipes/community?sort=rating');
+      const recipes = (res.data && res.data.recipes) || [];
+      const el = document.getElementById('recipes-content');
+      el.innerHTML = recipes.length
+        ? recipes.map(r => AICoach.recipeCard(r, false)).join('')
+        : '<div class="empty"><div class="empty-icon">🌍</div><div class="empty-text">No community recipes yet.<br>Share yours by making a recipe public!</div></div>';
+    } catch {}
+  },
+
+  recipeCard(r, isMine) {
+    const catEmoji = {BREAKFAST:'🍳',LUNCH:'🥘',DINNER:'🌙',SNACK:'🍎',PRE_WORKOUT:'⚡',POST_WORKOUT:'💪'};
+    const today    = new Date().toISOString().split('T')[0];
+    const items    = (r.template_items||[]).slice(0,4).map(i => i.food && i.food.name).filter(Boolean);
+    return `<div class="card" style="padding:14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:15px;">${catEmoji[r.category]||''} ${r.template_name}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${r.user?'by '+r.user.name+' · ':''}${r.avg_rating?r.avg_rating+' ⭐':'No ratings'} ${r.review_count?'('+r.review_count+')':''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:10px;">
+          <div style="font-family:var(--font-head);font-weight:800;color:var(--accent);">${r.total_calories} kcal</div>
+          <div style="font-size:10px;color:var(--muted);">${r.total_protein_g}g protein</div>
+        </div>
+      </div>
+      ${items.length?`<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">${items.join(' · ')}</div>`:''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="AICoach.quickLogRecipe('${r.id}','${today}')" style="padding:8px 14px;background:var(--accent);border:none;border-radius:6px;color:#0d0d0d;font-size:12px;font-family:var(--font-head);font-weight:700;cursor:pointer;">⚡ Quick Log</button>
+        ${!isMine?`<button onclick="AICoach.rateRecipe('${r.id}')" style="padding:8px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;cursor:pointer;">⭐ Rate</button>`:''}
+      </div>
+    </div>`;
+  },
+
+  async quickLogRecipe(id, date) {
+    try {
+      const mealType = AICoach.guessMealType();
+      const res = await api('POST', `/recipes/${id}/log`, { meal_type: mealType, date });
+      if (res.success) {
+        Toast.show(`✅ ${res.data.recipe_name} logged — ${res.data.total_nutrition.calories} kcal`, 'success');
+        if (State.currentTab === 'dashboard') Dashboard.load();
+      }
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  async rateRecipe(id) {
+    const r = parseInt(prompt('Rate 1–5 stars:') || '0');
+    if (!r || r < 1 || r > 5) return;
+    try {
+      await api('POST', `/recipes/${id}/rate`, { rating: r });
+      Toast.show('⭐ Rated!', 'success');
+      AICoach.showCommunityRecipes();
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  showSaveRecipeModal() {
+    Toast.show('Log your meal items first, then use the "Save as Recipe" button from the Meals tab.', 'info');
+  },
+
+  // ── Mood ──────────────────────────────────────────────
+  setMood(val, btn) {
+    AICoach.moodVal = val;
+    document.querySelectorAll('.mood-btn').forEach(b => {
+      b.style.borderColor = parseInt(b.dataset.mood) === val ? 'var(--accent)' : 'transparent';
+      b.style.background  = parseInt(b.dataset.mood) === val ? 'rgba(232,245,78,.1)' : 'none';
+    });
+  },
+
+  setStress(val, btn) {
+    AICoach.stressVal = val;
+    document.querySelectorAll('.stress-btn').forEach(b => {
+      b.style.borderColor = parseInt(b.dataset.stress) === val ? 'var(--accent2)' : 'var(--border)';
+      b.style.background  = parseInt(b.dataset.stress) === val ? 'rgba(255,107,53,.15)' : 'var(--bg3)';
+    });
+  },
+
+  async logMood() {
+    const sleep = parseFloat(document.getElementById('sleep-slider').value);
+    try {
+      const res = await api('POST', '/mood', {
+        date:           new Date().toISOString().split('T')[0],
+        sleep_hours:    sleep,
+        mood_rating:    AICoach.moodVal   || 3,
+        stress_level:   AICoach.stressVal || 3,
+        energy_level:   AICoach.moodVal   || 3,
+        recovery_state: 3,
+      });
+      if (res.success) {
+        Toast.show('Mood saved 🧠', 'success');
+        await AICoach.loadMoodInsights();
+      }
+    } catch(e) { Toast.show(e.message, 'error'); }
+  },
+
+  async loadMoodInsights() {
+    try {
+      const res = await api('GET', '/mood/insights');
+      if (!res.success) return;
+      const { averages, insights, tracking_days } = res.data;
+      const el = document.getElementById('mood-insights-content');
+      if (!el) return;
+
+      const statColor = (v, low, high) => !v ? 'var(--muted)' : v < low ? 'var(--danger)' : v > high ? 'var(--success)' : 'var(--warn)';
+
+      el.innerHTML = `
+        ${averages && (averages.sleep_hours || averages.mood) ? `
+        <div class="card">
+          <div class="card-title">28-Day Averages</div>
+          <div class="stat-grid">
+            <div class="profile-stat"><div class="profile-stat-val" style="color:${statColor(averages.sleep_hours,7,9)}">${averages.sleep_hours?averages.sleep_hours.toFixed(1)+'h':'—'}</div><div class="profile-stat-label">Sleep</div></div>
+            <div class="profile-stat"><div class="profile-stat-val" style="color:${statColor(averages.mood,3,5)}">${averages.mood?averages.mood.toFixed(1)+'/5':'—'}</div><div class="profile-stat-label">Mood</div></div>
+            <div class="profile-stat"><div class="profile-stat-val" style="color:${statColor(averages.stress,0,2)}">${averages.stress?averages.stress.toFixed(1)+'/5':'—'}</div><div class="profile-stat-label">Stress</div></div>
+          </div>
+        </div>` : ''}
+        ${insights && insights.length ? insights.map(i => `
+          <div class="warning ${i.type === 'warning' ? 'warn' : 'info'}" style="margin-bottom:10px;">
+            <span>${i.type === 'success' ? '✅' : i.type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+            <span style="font-size:13px;">${i.message}</span>
+          </div>`).join('') : ''}
+        ${tracking_days < 5 ? '<div class="card"><div style="font-size:13px;color:var(--muted);">Log mood for 5+ days to see personalised insights and correlations.</div></div>' : ''}`;
+    } catch {}
   },
 };
 
