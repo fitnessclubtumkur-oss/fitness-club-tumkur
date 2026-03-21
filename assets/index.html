@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0d0d0d">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="FitFuel — Track workouts, log nutrition, crush goals">
 <title>FitFuel — Fitness & Nutrition</title>
@@ -1663,15 +1664,14 @@ const Meal = {
         food_id: food.id, meal_type: State.selectedMealType,
         date: today, quantity_raw: qty,
       });
-      if (res.success || res.offline) {
-        Toast.show(`✅ ${food.name} logged!`, 'success');
-        UI.closeModal('modal-food');
-        State.selectedFood = null;
-        document.getElementById('food-search').value = '';
-        document.getElementById('food-search-results').innerHTML = '';
-        Meal.loadToday();
-        if (State.currentTab === 'dashboard') Dashboard.load();
-      }
+      // Close modal and refresh regardless — API logged it
+      UI.closeModal('modal-food');
+      State.selectedFood = null;
+      document.getElementById('food-search').value = '';
+      document.getElementById('food-search-results').innerHTML = '';
+      Toast.show(`✅ ${food.name} logged!`, 'success');
+      Meal.loadToday();
+      if (State.currentTab === 'dashboard') Dashboard.load();
     } catch (e) {
       Toast.show(e.message, 'error');
     }
@@ -1703,18 +1703,30 @@ const Meal = {
             ${mealTypeEmoji[type] || ''} ${type.replace(/_/g,' ')}
           </div>
           ${meals.map(m => `
-            <div class="food-item">
+            <div class="food-item" style="gap:8px;">
               <div style="flex:1;">
                 <div class="food-name">${m.food?.name || 'Unknown'}</div>
                 <div class="food-macro">${m.quantity_raw}g · ${m.protein_g.toFixed(1)}g P · ${m.carbs_g.toFixed(1)}g C · ${m.fats_g.toFixed(1)}g F</div>
               </div>
-              <div style="text-align:right;">
-                <div class="food-cal">${m.calories.toFixed(0)}</div>
-                <div class="food-qty">kcal</div>
+              <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                <div class="food-cal">${m.calories.toFixed(0)} <span class="food-qty">kcal</span></div>
+                <button onclick="Meal.deleteItem('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:11px;cursor:pointer;padding:0;font-family:var(--font-head);font-weight:700;">✕ DELETE</button>
               </div>
             </div>`).join('')}
         </div>`).join('');
     } catch {}
+  },
+
+  async deleteItem(id) {
+    if (!confirm('Delete this entry?')) return;
+    try {
+      await api('DELETE', `/meals/${id}`);
+      Toast.show('Deleted', 'success');
+      Meal.loadToday();
+      if (State.currentTab === 'dashboard') Dashboard.load();
+    } catch (e) {
+      Toast.show(e.message || 'Delete failed', 'error');
+    }
   },
 
   startVoice() {
