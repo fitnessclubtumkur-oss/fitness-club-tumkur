@@ -904,7 +904,7 @@ const State = {
   selectedFood: null,
   exercises: [],         // for resistance workout
   foods: [],             // search results
-  offlineQueue: JSON.parse(localStorage.getItem('ff_queue') || '[]'),
+  offlineQueue: (() => { try { return JSON.parse(localStorage.getItem('ff_queue') || '[]'); } catch { return []; } })(),
   isOnline: navigator.onLine,
 };
 
@@ -926,7 +926,7 @@ async function api(method, path, body = null) {
 
   if (!State.isOnline && method !== 'GET') {
     State.offlineQueue.push({ method, url: path, body, ts: Date.now() });
-    localStorage.setItem('ff_queue', JSON.stringify(State.offlineQueue));
+    try { localStorage.setItem('ff_queue', JSON.stringify(State.offlineQueue)); } catch {}
     Toast.show('Saved offline — will sync when connected', 'info');
     return { success: true, offline: true };
   }
@@ -934,6 +934,12 @@ async function api(method, path, body = null) {
   try {
     const res = await fetch(url, opts);
     const data = await res.json();
+    if (res.status === 401) {
+      State.token = null; State.user = null;
+      try { sessionStorage.clear(); } catch {}
+      UI.showScreen('s-auth');
+      throw new Error('Session expired. Please log in again.');
+    }
     if (!res.ok) throw new Error(data.message || 'API error');
     return data;
   } catch (e) {
@@ -1129,7 +1135,10 @@ const Auth = {
         Dashboard.renderNoProfile && Dashboard.renderNoProfile();
         return;
       }
-      State.goals = (await api('GET', '/profile/goals')).catch(() => null).then(r => r?.data?.goals);
+      try {
+        const goalsData = await api('GET', '/profile/goals');
+        State.goals = goalsData?.data?.goals || null;
+      } catch { State.goals = null; }
     } catch {}
     Dashboard.load();
   },
@@ -1874,9 +1883,10 @@ async function syncOfflineQueue() {
   if (!State.offlineQueue.length || !State.token) return;
   try {
     await api('POST', '/sync', { items: State.offlineQueue });
+    const syncedCount = State.offlineQueue.length;
     State.offlineQueue = [];
-    localStorage.removeItem('ff_queue');
-    Toast.show(`✅ Synced ${State.offlineQueue.length} offline records`, 'success');
+    try { localStorage.removeItem('ff_queue'); } catch {}
+    Toast.show(`✅ Synced ${syncedCount} offline records`, 'success');
   } catch {}
 }
 
