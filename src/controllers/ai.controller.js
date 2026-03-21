@@ -15,7 +15,7 @@ async function callClaude(messages, maxTokens = 800, system = '') {
   }
 
   const body = {
-    model:      'claude-opus-4-5',
+    model:      'claude-sonnet-4-6',
     max_tokens: maxTokens,
     messages,
   };
