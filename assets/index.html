@@ -673,6 +673,12 @@ html, body {
           </div>
         </div>
 
+        <!-- City selector -->
+        <div class="chips" id="kitchen-city-chips" style="margin-bottom:8px;">
+          <div class="chip active" onclick="Kitchen.switchCity('bangalore')">🏙️ Bangalore</div>
+          <div class="chip" onclick="Kitchen.switchCity('delhi')">🏙️ Delhi</div>
+        </div>
+
         <!-- Menu filter chips -->
         <div class="chips" id="kitchen-filter-chips">
           <div class="chip active" onclick="Kitchen.filter('ALL')">All</div>
@@ -718,6 +724,7 @@ html, body {
           <div class="chip active" onclick="AICoach.switchTab('insights')">✨ Insights</div>
           <div class="chip" onclick="AICoach.switchTab('recipes')">📖 Recipes</div>
           <div class="chip" onclick="AICoach.switchTab('mood')">🧠 Wellbeing</div>
+          <div class="chip" onclick="AICoach.switchTab('programs')">🩺 Programs</div>
         </div>
 
         <!-- Insights view -->
@@ -725,6 +732,20 @@ html, body {
           <div id="ai-insight-content">
             <div class="empty"><div class="empty-icon">✨</div><div class="empty-text">Tap "Weekly Story" to get your AI fitness narrative.<br><br>Requires CLAUDE_API_KEY in Railway Variables.</div></div>
           </div>
+        </div>
+
+        <!-- Programs view -->
+        <div id="ai-programs-view" style="display:none;">
+          <div id="my-programs-strip" style="margin-bottom:12px;"></div>
+          <div class="chips" id="program-type-chips" style="margin-bottom:12px;">
+            <div class="chip active" onclick="Programs.filter('ALL')">All</div>
+            <div class="chip" onclick="Programs.filter('DIABETES')">🩸 Diabetes</div>
+            <div class="chip" onclick="Programs.filter('PCOS')">🌙 PCOS</div>
+            <div class="chip" onclick="Programs.filter('HEART_HEALTH')">❤️ Heart</div>
+            <div class="chip" onclick="Programs.filter('THYROID')">🦋 Thyroid</div>
+            <div class="chip" onclick="Programs.filter('WEIGHT_LOSS_INTENSIVE')">⚡ Weight Loss</div>
+          </div>
+          <div id="programs-grid"></div>
         </div>
 
         <!-- Recipes view -->
@@ -779,6 +800,45 @@ html, body {
       </div>
     </div>
 
+
+    <!-- ── CLASSES TAB ──────────────────────────────── -->
+    <div class="tab-view" id="tab-classes">
+      <div style="padding-top:16px;">
+
+        <div style="background:linear-gradient(135deg,#0a1a18,#091612);border:1px solid #0e3a30;border-radius:var(--radius);padding:20px;margin-bottom:16px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-30px;right:-30px;width:130px;height:130px;background:radial-gradient(circle,rgba(78,205,196,.2) 0%,transparent 70%);pointer-events:none;"></div>
+          <div style="font-family:var(--font-head);font-size:22px;font-weight:800;color:#4ecdc4;margin-bottom:4px;">🎥 Live Classes</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Book · Attend · Auto-log your workout</div>
+          <div id="live-class-banner" style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);">
+            <span style="width:7px;height:7px;border-radius:50%;background:#4ecdc4;"></span> Loading today's schedule...
+          </div>
+        </div>
+
+        <!-- filter chips -->
+        <div class="chips" id="classes-filter-chips" style="margin-bottom:12px;">
+          <div class="chip active" onclick="Classes.filter('ALL')">All</div>
+          <div class="chip" onclick="Classes.filter('LIVE')">🔴 Live</div>
+          <div class="chip" onclick="Classes.filter('YOGA')">🧘 Yoga</div>
+          <div class="chip" onclick="Classes.filter('HIIT')">🔥 HIIT</div>
+          <div class="chip" onclick="Classes.filter('STRENGTH')">💪 Strength</div>
+          <div class="chip" onclick="Classes.filter('DANCE')">💃 Dance</div>
+          <div class="chip" onclick="Classes.filter('FREE')">Free</div>
+        </div>
+
+        <!-- class cards grid -->
+        <div id="classes-grid"></div>
+
+        <!-- My bookings section -->
+        <div class="section-head" style="margin-top:16px;">
+          <div class="section-title">My Classes</div>
+          <div class="section-action" onclick="Classes.loadMyBookings()">Refresh</div>
+        </div>
+        <div id="my-classes-list">
+          <div class="empty"><div class="empty-icon">🎥</div><div class="empty-text">Book a class to see it here.</div></div>
+        </div>
+
+      </div>
+    </div>
 
     <!-- ── SOCIAL TAB ──────────────────────────────── -->
     <div class="tab-view" id="tab-social">
@@ -919,6 +979,9 @@ html, body {
     </button>
     <button class="nav-item" id="nav-social" onclick="UI.showTab('social')">
       <span class="nav-icon">👥</span><span>Social</span>
+    </button>
+    <button class="nav-item" id="nav-classes" onclick="UI.showTab('classes')">
+      <span class="nav-icon">🎥</span><span>Classes</span>
     </button>
     <button class="nav-item" id="nav-profile" onclick="UI.showTab('profile')">
       <span class="nav-icon">👤</span><span>Profile</span>
@@ -1073,6 +1136,7 @@ const UI = {
     if (tab === 'kitchen') Kitchen.load();
     if (tab === 'social')  Social.load();
     if (tab === 'ai')     AICoach.load();
+    if (tab === 'classes') Classes.load();
   },
 
   authTab(tab) {
@@ -2014,6 +2078,8 @@ const Profile = {
           <button class="btn btn-ghost" onclick="Tracker.load()">📊 Progress Analytics</button>
           <button class="btn btn-ghost" onclick="Prefs.load()">🥗 Dietary Preferences</button>
           <button class="btn btn-ghost" onclick="Wearables.load();document.getElementById('wearables-section').scrollIntoView()">⌚ Wearables</button>
+          <button class="btn btn-ghost" onclick="HealthTracking.loadBloodSugar()">🩸 Blood Sugar Log</button>
+          <button class="btn btn-ghost" onclick="HealthTracking.loadCycle()">🌙 Cycle Tracking</button>
           <button class="btn btn-ghost" onclick="Sms.sendDayClose()">📱 Send Day Summary SMS</button>
           <button class="btn btn-danger" onclick="Auth.logout()">🚪 Logout</button>
         </div>
@@ -2022,6 +2088,8 @@ const Profile = {
         <div id="weight-section"></div>
         <div id="prefs-section"></div>
         <div id="wearables-section"></div>
+        <div id="bloodsugar-section"></div>
+        <div id="cycle-section"></div>
       `;
     } catch (e) {
       document.getElementById('profile-content').innerHTML = `
@@ -2760,14 +2828,25 @@ const Kitchen = {
   filter_cat: 'ALL',
   filter_veg: false,
   kitchenId:  null,
+  city:       'bangalore',
 
   async load() {
     await Promise.all([Kitchen.loadStatus(), Kitchen.loadMeals(), Kitchen.loadOrders()]);
   },
 
+  async switchCity(city) {
+    Kitchen.city = city;
+    document.querySelectorAll('#kitchen-city-chips .chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('#kitchen-city-chips .chip').forEach(c => {
+      if (c.textContent.toLowerCase().includes(city)) c.classList.add('active');
+    });
+    Kitchen.kitchenId = null;
+    await Promise.all([Kitchen.loadStatus(), Kitchen.loadMeals()]);
+  },
+
   async loadStatus() {
     try {
-      const res = await api('GET', '/kitchens?city=Bangalore');
+      const res = await api('GET', `/kitchens?city=${Kitchen.city.charAt(0).toUpperCase()+Kitchen.city.slice(1)}`);
       if (res.success && res.data.kitchens.length) {
         Kitchen.kitchenId = res.data.kitchens[0].id;
         const statusRes = await api('GET', `/kitchens/${Kitchen.kitchenId}/status`);
@@ -3389,16 +3468,17 @@ const AICoach = {
 
   switchTab(tab) {
     AICoach.curTab = tab;
-    const views = { insights:'ai-insights-view', recipes:'ai-recipes-view', mood:'ai-mood-view' };
+    const views = { insights:'ai-insights-view', recipes:'ai-recipes-view', mood:'ai-mood-view', programs:'ai-programs-view' };
     Object.values(views).forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
     const active = document.getElementById(views[tab]);
     if (active) active.style.display = 'block';
     document.querySelectorAll('#ai-tabs .chip').forEach(c => c.classList.remove('active'));
-    const labels = { insights:'✨ Insights', recipes:'📖 Recipes', mood:'🧠 Wellbeing' };
+    const labels = { insights:'✨ Insights', recipes:'📖 Recipes', mood:'🧠 Wellbeing', programs:'🩺 Programs' };
     document.querySelectorAll('#ai-tabs .chip').forEach(c => { if(c.textContent===labels[tab]) c.classList.add('active'); });
     if (tab === 'insights') AICoach.loadInsights();
     if (tab === 'recipes')  AICoach.showMyRecipes();
     if (tab === 'mood')     { AICoach.loadMoodInsights(); }
+    if (tab === 'programs') Programs.load();
   },
 
   // ── Insights ──────────────────────────────────────────
@@ -3675,6 +3755,490 @@ const AICoach = {
           </div>`).join('') : ''}
         ${tracking_days < 5 ? '<div class="card"><div style="font-size:13px;color:var(--muted);">Log mood for 5+ days to see personalised insights and correlations.</div></div>' : ''}`;
     } catch {}
+  },
+};
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLASSES MODULE
+// ─────────────────────────────────────────────────────────────────────────────
+const Classes = {
+  all:        [],
+  filterMode: 'ALL',
+
+  async load() {
+    await Promise.all([Classes.loadCatalog(), Classes.loadTodayLive(), Classes.loadMyBookings()]);
+  },
+
+  async loadCatalog() {
+    const grid = document.getElementById('classes-grid');
+    if (!grid) return;
+    grid.innerHTML = '<div class="empty"><div class="empty-text">Loading classes...</div></div>';
+    try {
+      let url = '/classes?limit=20';
+      if (Classes.filterMode === 'LIVE') url = '/classes?is_live=true';
+      else if (Classes.filterMode === 'FREE') url = '/classes?free=true';
+      else if (Classes.filterMode !== 'ALL') url = '/classes?type=' + Classes.filterMode;
+      const res = await api('GET', url);
+      if (!res.success || !res.data.classes.length) {
+        grid.innerHTML = '<div class="empty"><div class="empty-icon">🎥</div><div class="empty-text">No classes found. Run db:seed to populate.</div></div>';
+        return;
+      }
+      Classes.all = res.data.classes;
+      grid.innerHTML = Classes.all.map(c => Classes.renderCard(c)).join('');
+    } catch(e) {
+      grid.innerHTML = '<div class="empty"><div class="empty-text">Could not load classes.</div></div>';
+    }
+  },
+
+  renderCard(c) {
+    const isLive = c.is_live;
+    const lc = { BEGINNER:'var(--success)', INTERMEDIATE:'var(--accent)', ADVANCED:'var(--danger)', ALL_LEVELS:'var(--teal)' };
+    const te = { YOGA:'🧘', HIIT:'🔥', STRENGTH:'💪', CARDIO:'🏃', MEDITATION:'🧠', DANCE:'💃', PILATES:'🤸', ZUMBA:'🪩', STRETCHING:'🙆' };
+    const col = isLive ? 'rgba(78,205,196,.08)' : 'var(--bg3)';
+    const bdr = isLive ? 'rgba(78,205,196,.3)' : 'var(--border)';
+    const timeStr = c.scheduled_at
+      ? new Date(c.scheduled_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'}) : '';
+    const safeTitle = c.title.replace(/'/g, "\\'");
+    return `<div style="background:${col};border:1px solid ${bdr};border-radius:12px;padding:16px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:22px;">${te[c.class_type]||'🎥'}</span>
+          <div>
+            <div style="font-family:var(--font-head);font-size:15px;font-weight:800;">${c.title}</div>
+            <div style="font-size:11px;color:var(--muted);">${c.instructor} · ${c.duration_min} min${c.calories_burn?' · ~'+c.calories_burn+' kcal':''}</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          ${isLive?`<span style="background:rgba(78,205,196,.15);border:1px solid rgba(78,205,196,.3);border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;color:#4ecdc4;">🔴 LIVE${timeStr?' · '+timeStr:''}</span>`:''}
+          ${c.is_free?'<span style="background:rgba(46,204,113,.12);border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--success);">FREE</span>':`<span style="font-size:11px;font-weight:700;color:var(--accent);">₹${c.price_inr}</span>`}
+        </div>
+      </div>
+      ${c.description?`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">${c.description}</div>`:''}
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:10px;font-weight:700;color:${lc[c.level]||'var(--muted)'};">${(c.level||'').replace('_',' ')}</span>
+        ${c.spots_left!==null?`<span style="font-size:11px;color:var(--muted);">${c.spots_left} spots left</span>`:''}
+        ${c.avg_rating?`<span style="font-size:11px;color:var(--accent);">★ ${c.avg_rating}</span>`:''}
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button onclick="Classes.book('${c.id}','${safeTitle}',${isLive})"
+            style="padding:8px 16px;background:rgba(78,205,196,.2);border:1px solid rgba(78,205,196,.4);border-radius:8px;color:#4ecdc4;font-family:var(--font-head);font-size:12px;font-weight:700;cursor:pointer;">Book</button>
+          <button onclick="Classes.markDone('${c.id}','${safeTitle}',${c.duration_min},${c.calories_burn||0})"
+            style="padding:8px 16px;background:rgba(46,204,113,.12);border:1px solid rgba(46,204,113,.25);border-radius:8px;color:var(--success);font-family:var(--font-head);font-size:12px;font-weight:700;cursor:pointer;">✓ Done</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  async loadTodayLive() {
+    const banner = document.getElementById('live-class-banner');
+    if (!banner) return;
+    try {
+      const res = await api('GET', '/classes/live');
+      if (!res.success || !res.data.classes.length) {
+        banner.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px;"></span>No live classes today';
+        return;
+      }
+      const ongoing = res.data.classes.find(c => c.is_ongoing);
+      const next    = res.data.classes.find(c => !c.is_ongoing) || res.data.classes[0];
+      if (ongoing) {
+        banner.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#4ecdc4;display:inline-block;margin-right:6px;"></span><strong style="color:#4ecdc4;">LIVE NOW:</strong> ' + ongoing.title + ' · ' + ongoing.instructor;
+      } else if (next) {
+        const h = Math.floor(next.starts_in_min/60), m = next.starts_in_min%60;
+        const tl = h>0 ? h+'h '+m+'m' : m+'m';
+        banner.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#4ecdc4;display:inline-block;margin-right:6px;"></span>Next: <strong style="color:#4ecdc4;">' + next.title + '</strong> in ' + tl;
+      }
+    } catch(e) {
+      banner.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px;"></span>Schedule unavailable';
+    }
+  },
+
+  async loadMyBookings() {
+    const list = document.getElementById('my-classes-list');
+    if (!list) return;
+    try {
+      const res = await api('GET', '/classes/my/bookings?limit=10');
+      if (!res.success || !res.data.bookings.length) {
+        list.innerHTML = '<div class="empty"><div class="empty-icon">🎥</div><div class="empty-text">No bookings yet. Book a class above!</div></div>';
+        return;
+      }
+      const si = {BOOKED:'📅',ATTENDED:'✅',CANCELLED:'❌',NO_SHOW:'⚠️'};
+      list.innerHTML = res.data.bookings.map(b => {
+        const cls = b.workout_class;
+        const dt  = new Date(b.booked_at).toLocaleDateString('en-IN');
+        const st  = b.status;
+        const saf = cls.title.replace(/'/g,"\\'");
+        return `<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg3);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);">
+          <span style="font-size:20px;">${si[st]||'📅'}</span>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:13px;">${cls.title}</div>
+            <div style="font-size:11px;color:var(--muted);">${cls.instructor} · ${dt}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;font-weight:700;color:${st==='ATTENDED'?'var(--success)':st==='BOOKED'?'var(--accent)':'var(--muted)'};">${st}</div>
+            ${st==='BOOKED'?`<button onclick="Classes.markDone('${cls.id}','${saf}',${cls.duration_min},${cls.calories_burn||0})" style="margin-top:4px;padding:4px 10px;background:rgba(46,204,113,.15);border:1px solid rgba(46,204,113,.3);border-radius:6px;color:var(--success);font-size:10px;font-weight:700;cursor:pointer;">Mark Done</button>`:''}
+            ${st==='ATTENDED'&&!b.rating?`<button onclick="Classes.rateModal('${cls.id}','${saf}')" style="margin-top:4px;padding:4px 10px;background:rgba(232,245,78,.1);border:1px solid rgba(232,245,78,.25);border-radius:6px;color:var(--accent);font-size:10px;font-weight:700;cursor:pointer;">Rate ★</button>`:''}
+            ${st==='ATTENDED'&&b.rating?`<div style="font-size:12px;color:var(--accent);">★${b.rating}</div>`:''}
+          </div>
+        </div>`;
+      }).join('') + `<div style="margin-top:8px;font-size:12px;color:var(--muted);">Attended: <strong>${res.data.stats.attended}</strong> of <strong>${res.data.stats.total_booked}</strong> booked</div>`;
+    } catch(e) {
+      list.innerHTML = '<div class="empty"><div class="empty-text">Could not load bookings.</div></div>';
+    }
+  },
+
+  async book(id, title, isLive) {
+    try {
+      Toast.show('Booking ' + title + '...', 'info');
+      const res = await api('POST', '/classes/' + id + '/book');
+      if (res.success) {
+        const when = isLive && res.data.scheduled_at
+          ? ' — at ' + new Date(res.data.scheduled_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'}) : '';
+        Toast.show('✅ Booked: ' + title + when, 'success');
+        Classes.loadMyBookings();
+      } else {
+        Toast.show(res.message || 'Could not book', 'error');
+      }
+    } catch(e) { Toast.show('Error booking class', 'error'); }
+  },
+
+  async markDone(id, title, durationMin, calories) {
+    if (!confirm('Mark "' + title + '" as completed?\nAuto-logs a ' + durationMin + ' min workout (~' + calories + ' kcal).')) return;
+    try {
+      const res = await api('POST', '/classes/' + id + '/complete', { date: new Date().toISOString() });
+      if (res.success) {
+        Toast.show('🎉 ' + title + ' done! ' + res.data.calories_burned + ' kcal logged.', 'success');
+        Classes.loadMyBookings();
+      } else {
+        Toast.show(res.message || 'Could not complete class', 'error');
+      }
+    } catch(e) { Toast.show('Error completing class', 'error'); }
+  },
+
+  rateModal(id, title) {
+    const stars = prompt('Rate "' + title + '" (1–5 stars):');
+    if (!stars || isNaN(stars) || stars < 1 || stars > 5) return;
+    Classes.submitRating(id, parseInt(stars));
+  },
+
+  async submitRating(id, rating) {
+    try {
+      const res = await api('POST', '/classes/' + id + '/rate', { rating });
+      if (res.success) { Toast.show('Rating saved!', 'success'); Classes.loadMyBookings(); }
+    } catch(e) {}
+  },
+
+  filter(mode) {
+    Classes.filterMode = mode;
+    const labels = { ALL:'All', LIVE:'🔴 Live', YOGA:'🧘 Yoga', HIIT:'🔥 HIIT', STRENGTH:'💪 Strength', DANCE:'💃 Dance', FREE:'Free' };
+    document.querySelectorAll('#classes-filter-chips .chip').forEach(c => {
+      c.classList.toggle('active', c.textContent === (labels[mode] || mode));
+    });
+    Classes.loadCatalog();
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROGRAMS MODULE
+// ─────────────────────────────────────────────────────────────────────────────
+const Programs = {
+  all:        [],
+  filterType: 'ALL',
+
+  async load() {
+    await Promise.all([Programs.loadMyEnrollments(), Programs.loadCatalog()]);
+  },
+
+  async loadCatalog() {
+    const grid = document.getElementById('programs-grid');
+    if (!grid) return;
+    grid.innerHTML = '<div class="empty"><div class="empty-text">Loading programs...</div></div>';
+    try {
+      const url = Programs.filterType === 'ALL' ? '/programs' : '/programs?type=' + Programs.filterType;
+      const res = await api('GET', url);
+      if (!res.success || !res.data.length) {
+        grid.innerHTML = '<div class="empty"><div class="empty-icon">🩺</div><div class="empty-text">No programs found. Run db:seed to populate.</div></div>';
+        return;
+      }
+      Programs.all = res.data;
+      const tc = { DIABETES:'rgba(231,76,60,.12)', PCOS:'rgba(162,105,255,.1)', HEART_HEALTH:'rgba(231,76,60,.08)', THYROID:'rgba(78,205,196,.1)', WEIGHT_LOSS_INTENSIVE:'rgba(255,107,53,.1)' };
+      const te = { DIABETES:'🩸', PCOS:'🌙', HEART_HEALTH:'❤️', THYROID:'🦋', WEIGHT_LOSS_INTENSIVE:'⚡', PREGNANCY:'🤱' };
+      grid.innerHTML = res.data.map(p => {
+        const safeName = p.name.replace(/'/g,"\\'");
+        return `<div style="background:${tc[p.program_type]||'var(--bg3)'};border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="font-family:var(--font-head);font-size:16px;font-weight:800;">${te[p.program_type]||'🩺'} ${p.name}</div>
+            <div style="text-align:right;">
+              ${p.price_inr?`<div style="font-size:13px;font-weight:800;color:var(--accent);">₹${p.price_inr}</div>`:'<div style="font-size:11px;font-weight:700;color:var(--success);">FREE</div>'}
+              <div style="font-size:10px;color:var(--muted);">${p.duration_weeks} weeks</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">${p.description}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+            ${(p.features||[]).slice(0,4).map(f=>`<span style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:3px 8px;font-size:10px;color:var(--muted);">${f}</span>`).join('')}
+          </div>
+          <button onclick="Programs.enroll('${p.id}','${safeName}',${p.price_inr||0})"
+            style="width:100%;padding:10px;background:rgba(232,245,78,.12);border:1px solid rgba(232,245,78,.3);border-radius:8px;color:var(--accent);font-family:var(--font-head);font-size:13px;font-weight:700;cursor:pointer;">
+            Enroll Now →
+          </button>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      grid.innerHTML = '<div class="empty"><div class="empty-text">Could not load programs.</div></div>';
+    }
+  },
+
+  async loadMyEnrollments() {
+    const strip = document.getElementById('my-programs-strip');
+    if (!strip) return;
+    try {
+      const res = await api('GET', '/programs/my/enrollments');
+      const active = (res.data||[]).filter(e => e.status === 'ACTIVE');
+      if (!active.length) { strip.innerHTML = ''; return; }
+      strip.innerHTML = `<div style="margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">My Active Programs</div>
+        ${active.map(e => `
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-weight:700;font-size:13px;">${e.program.name}</div>
+            <div style="font-size:11px;font-weight:700;color:var(--accent);">Week ${e.current_week}/${e.program.duration_weeks}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:3px;height:5px;overflow:hidden;margin-bottom:8px;">
+            <div style="height:100%;width:${e.progress_pct}%;background:var(--accent);border-radius:3px;"></div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="Programs.pause('${e.id}')"
+              style="flex:1;padding:7px;background:rgba(102,102,102,.1);border:1px solid rgba(102,102,102,.2);border-radius:6px;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;">Pause</button>
+            <button onclick="Programs.advance('${e.id}')"
+              style="flex:2;padding:7px;background:rgba(232,245,78,.1);border:1px solid rgba(232,245,78,.25);border-radius:6px;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;">→ Next Week</button>
+          </div>
+        </div>`).join('')}
+      </div>`;
+    } catch(e) { strip.innerHTML = ''; }
+  },
+
+  async enroll(id, name, price) {
+    const msg = price > 0
+      ? 'Enroll in "' + name + '" for ₹' + price + '?\n\n(Enrollment is free for now — Razorpay integration coming.)'
+      : 'Enroll in "' + name + '"?';
+    if (!confirm(msg)) return;
+    try {
+      Toast.show('Enrolling...', 'info');
+      const res = await api('POST', '/programs/enroll', { program_id: id });
+      if (res.success) {
+        Toast.show('✅ Enrolled in ' + name + '! Week 1 starts now.', 'success');
+        Programs.loadMyEnrollments();
+      } else {
+        Toast.show(res.message || 'Could not enroll', 'error');
+      }
+    } catch(e) { Toast.show('Error enrolling', 'error'); }
+  },
+
+  async advance(enrollmentId) {
+    try {
+      const res = await api('POST', '/programs/enrollments/' + enrollmentId + '/advance');
+      if (res.success) {
+        const msg = res.data && res.data.completed ? '🎉 Program completed!' : 'Week ' + (res.data && res.data.current_week) + ' started!';
+        Toast.show(msg, 'success');
+        Programs.loadMyEnrollments();
+      }
+    } catch(e) { Toast.show('Error advancing week', 'error'); }
+  },
+
+  async pause(enrollmentId) {
+    try {
+      const res = await api('PATCH', '/programs/enrollments/' + enrollmentId + '/status', { action: 'pause' });
+      if (res.success) { Toast.show('Program paused', 'info'); Programs.loadMyEnrollments(); }
+    } catch(e) {}
+  },
+
+  filter(type) {
+    Programs.filterType = type;
+    const labels = { ALL:'All', DIABETES:'🩸 Diabetes', PCOS:'🌙 PCOS', HEART_HEALTH:'❤️ Heart', THYROID:'🦋 Thyroid', WEIGHT_LOSS_INTENSIVE:'⚡ Weight Loss' };
+    document.querySelectorAll('#program-type-chips .chip').forEach(c => {
+      c.classList.toggle('active', c.textContent === (labels[type]||type));
+    });
+    Programs.loadCatalog();
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HEALTH TRACKING MODULE  (Blood Sugar + Cycle)
+// ─────────────────────────────────────────────────────────────────────────────
+const HealthTracking = {
+
+  async loadBloodSugar() {
+    await Profile.load();
+    const el = document.getElementById('bloodsugar-section');
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth' });
+    el.innerHTML = `<div class="card" style="margin-top:16px;">
+      <div class="card-title">🩸 Blood Sugar Log</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <input type="number" id="bs-reading" placeholder="Reading" step="0.1" min="1" max="35"
+          style="flex:1;min-width:90px;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;">
+        <select id="bs-unit" style="padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+          <option value="mmol">mmol/L</option>
+          <option value="mgdl">mg/dL</option>
+        </select>
+        <select id="bs-type" style="flex:1;min-width:110px;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+          <option value="FASTING">Fasting</option>
+          <option value="PRE_MEAL">Pre-meal</option>
+          <option value="POST_MEAL_2H">Post-meal 2h</option>
+          <option value="BEDTIME">Bedtime</option>
+          <option value="RANDOM">Random</option>
+        </select>
+      </div>
+      <button onclick="HealthTracking.logBloodSugar()" class="btn btn-primary" style="margin-bottom:16px;">Log Reading</button>
+      <div id="bs-history"></div>
+    </div>`;
+    HealthTracking.loadBsHistory();
+  },
+
+  async logBloodSugar() {
+    const reading = parseFloat(document.getElementById('bs-reading')?.value);
+    const unit    = document.getElementById('bs-unit')?.value;
+    const type    = document.getElementById('bs-type')?.value;
+    if (!reading || isNaN(reading)) { Toast.show('Enter a valid reading', 'error'); return; }
+    try {
+      const res = await api('POST', '/blood-sugar', { reading, unit, log_type: type });
+      if (res.success) {
+        Toast.show(res.data.risk_message, res.data.risk_level === 'NORMAL' ? 'success' : 'error');
+        document.getElementById('bs-reading').value = '';
+        HealthTracking.loadBsHistory();
+      }
+    } catch(e) { Toast.show('Error logging reading', 'error'); }
+  },
+
+  async loadBsHistory() {
+    const el = document.getElementById('bs-history');
+    if (!el) return;
+    try {
+      const res = await api('GET', '/blood-sugar?limit=14');
+      if (!res.success || !res.data.logs.length) {
+        el.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:12px;">No readings logged yet.</div>';
+        return;
+      }
+      const s = res.data.stats;
+      const rc = { NORMAL:'var(--success)', ELEVATED:'var(--warn)', HIGH:'var(--danger)', LOW:'var(--danger)' };
+      el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+          <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:18px;font-weight:800;">${s.avg_mmol}</div><div style="font-size:10px;color:var(--muted);">Avg mmol/L</div></div>
+          <div style="background:rgba(46,204,113,.08);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:18px;font-weight:800;color:var(--success);">${s.in_range}</div><div style="font-size:10px;color:var(--muted);">In range</div></div>
+          <div style="background:rgba(231,76,60,.06);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:18px;font-weight:800;color:var(--danger);">${s.above_range}</div><div style="font-size:10px;color:var(--muted);">Above range</div></div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Recent Readings</div>
+        ${res.data.logs.map(l => {
+          const risk = l.reading_mmol < 3.9 ? 'LOW' : l.reading_mmol > 7.8 ? 'HIGH' : 'NORMAL';
+          const date = new Date(l.logged_at).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+          return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">' +
+            '<div style="flex:1;"><span style="font-weight:700;color:' + (rc[risk]||'var(--text)') + ';">' + l.reading_mmol + ' mmol/L</span>' +
+            '<span style="font-size:11px;color:var(--muted);margin-left:6px;">(' + l.reading_mgdl + ' mg/dL)</span></div>' +
+            '<div style="font-size:11px;color:var(--muted);">' + (l.log_type||'').replace(/_/g,' ') + '</div>' +
+            '<div style="font-size:10px;color:var(--muted);">' + date + '</div></div>';
+        }).join('')}`;
+    } catch(e) {}
+  },
+
+  async loadCycle() {
+    await Profile.load();
+    const el = document.getElementById('cycle-section');
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth' });
+    const today = new Date().toISOString().split('T')[0];
+    el.innerHTML = `<div class="card" style="margin-top:16px;">
+      <div class="card-title">🌙 Cycle Tracking</div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Log Period</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:120px;">
+            <label style="font-size:11px;color:var(--muted);">Start date</label>
+            <input type="date" id="cycle-start" value="${today}"
+              style="width:100%;padding:9px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;margin-top:4px;">
+          </div>
+          <div style="flex:1;min-width:120px;">
+            <label style="font-size:11px;color:var(--muted);">End date (optional)</label>
+            <input type="date" id="cycle-end"
+              style="width:100%;padding:9px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;margin-top:4px;">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <select id="cycle-flow" style="flex:1;padding:9px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+            <option value="">Flow intensity</option>
+            <option value="SPOTTING">Spotting</option>
+            <option value="LIGHT">Light</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HEAVY">Heavy</option>
+          </select>
+          <input type="number" id="cycle-length" placeholder="Cycle length (days)" min="15" max="60"
+            style="flex:1;padding:9px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+        </div>
+        <input type="text" id="cycle-symptoms" placeholder="Symptoms e.g. cramps, bloating, headache"
+          style="width:100%;padding:9px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;margin-bottom:8px;">
+        <button onclick="HealthTracking.logCycle()" class="btn btn-primary">Log Period</button>
+      </div>
+      <div id="cycle-history"></div>
+    </div>`;
+    HealthTracking.loadCycleHistory();
+  },
+
+  async logCycle() {
+    const start   = document.getElementById('cycle-start')?.value;
+    const end     = document.getElementById('cycle-end')?.value;
+    const flow    = document.getElementById('cycle-flow')?.value;
+    const len     = document.getElementById('cycle-length')?.value;
+    const symTxt  = document.getElementById('cycle-symptoms')?.value;
+    if (!start) { Toast.show('Select a start date', 'error'); return; }
+    const symptoms = symTxt ? symTxt.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    const body = { period_start: start };
+    if (end)      body.period_end    = end;
+    if (flow)     body.flow_intensity = flow;
+    if (len)      body.cycle_length  = parseInt(len);
+    if (symptoms.length) body.symptoms = symptoms;
+    try {
+      const res = await api('POST', '/cycle', body);
+      if (res.success) {
+        Toast.show('Period logged!', 'success');
+        ['cycle-end','cycle-symptoms','cycle-length'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+        document.getElementById('cycle-flow').value = '';
+        HealthTracking.loadCycleHistory();
+      }
+    } catch(e) { Toast.show('Error logging cycle', 'error'); }
+  },
+
+  async loadCycleHistory() {
+    const el = document.getElementById('cycle-history');
+    if (!el) return;
+    try {
+      const res = await api('GET', '/cycle');
+      if (!res.success) return;
+      const { cycles, stats, predictions } = res.data;
+      let html = `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;">
+        <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:800;color:var(--purple);">${stats.avg_cycle_length}</div><div style="font-size:10px;color:var(--muted);">Avg cycle days</div></div>
+        <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:800;">${cycles.length}</div><div style="font-size:10px;color:var(--muted);">Periods logged</div></div>
+      </div>`;
+      if (predictions.length) {
+        html += `<div style="background:rgba(162,105,255,.08);border:1px solid rgba(162,105,255,.2);border-radius:10px;padding:12px;margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">🔮 Predicted Next Periods</div>
+          ${predictions.map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(162,105,255,.1);font-size:12px;"><span style="color:var(--muted);">Period ${p.cycle_number}</span><span style="color:var(--purple);font-weight:700;">${p.predicted_start}</span></div>`).join('')}
+        </div>`;
+      }
+      if (stats.top_symptoms?.length) {
+        html += `<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Common Symptoms</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">${stats.top_symptoms.map(s=>`<span style="background:rgba(162,105,255,.1);border:1px solid rgba(162,105,255,.2);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--purple);">${s.symptom} (${s.count}×)</span>`).join('')}</div></div>`;
+      }
+      if (cycles.length) {
+        html += `<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">History</div>`;
+        html += cycles.slice(0,6).map(c => {
+          const d = new Date(c.period_start).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+          return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;">
+            <span style="color:var(--purple);font-weight:700;min-width:70px;">${d}</span>
+            ${c.cycle_length?`<span style="color:var(--muted);">${c.cycle_length}d</span>`:''}
+            ${c.flow_intensity?`<span style="background:rgba(162,105,255,.1);border-radius:6px;padding:2px 6px;font-size:10px;color:var(--purple);">${c.flow_intensity}</span>`:''}
+            ${c.symptoms?.length?`<span style="color:var(--muted);font-size:11px;">${c.symptoms.slice(0,2).join(', ')}</span>`:''}
+          </div>`;
+        }).join('');
+      }
+      el.innerHTML = html;
+    } catch(e) { el.innerHTML = ''; }
   },
 };
 
