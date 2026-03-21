@@ -177,6 +177,10 @@ model User {
   preferences        UserPreferences?
   payments           Payment[]
   sms_logs           SmsLog[]
+  class_bookings     ClassBooking[]
+  program_enrollments ProgramEnrollment[]
+  blood_sugar_logs   BloodSugarLog[]
+  cycle_tracking     CycleTracking[]
   weight_history     WeightHistory[]
   body_measurements  BodyMeasurement[]
   running_segments   SegmentTime[]
@@ -1087,4 +1091,180 @@ enum PaymentStatus {
   CAPTURED
   FAILED
   REFUNDED
+}
+
+// ─────────────────────────────────────────────
+// PHASE 3A ADDITIONS — Live Classes + Specialist Programs
+// ─────────────────────────────────────────────
+
+enum ClassType {
+  YOGA
+  HIIT
+  STRENGTH
+  CARDIO
+  MEDITATION
+  DANCE
+  PILATES
+  ZUMBA
+  STRETCHING
+}
+
+enum ClassLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ALL_LEVELS
+}
+
+enum BookingStatus {
+  BOOKED
+  ATTENDED
+  CANCELLED
+  NO_SHOW
+}
+
+enum ProgramType {
+  DIABETES
+  PCOS
+  PREGNANCY
+  WEIGHT_LOSS_INTENSIVE
+  THYROID
+  HEART_HEALTH
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  DROPPED
+}
+
+enum BloodSugarType {
+  FASTING
+  PRE_MEAL
+  POST_MEAL_1H
+  POST_MEAL_2H
+  BEDTIME
+  RANDOM
+}
+
+enum FlowIntensity {
+  SPOTTING
+  LIGHT
+  MEDIUM
+  HEAVY
+}
+
+model WorkoutClass {
+  id               String     @id @default(uuid())
+  title            String
+  description      String?
+  instructor       String
+  class_type       ClassType
+  level            ClassLevel @default(ALL_LEVELS)
+  duration_min     Int
+  calories_burn    Int?
+  thumbnail_url    String?
+  video_url        String?
+  is_live          Boolean    @default(false)
+  scheduled_at     DateTime?
+  live_url         String?
+  max_participants Int?
+  tags             String[]
+  is_active        Boolean    @default(true)
+  is_free          Boolean    @default(true)
+  price_inr        Float?
+  met_value        Float?
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
+
+  bookings ClassBooking[]
+
+  @@index([class_type])
+  @@index([is_live, scheduled_at])
+}
+
+model ClassBooking {
+  id           String        @id @default(uuid())
+  user_id      String
+  class_id     String
+  status       BookingStatus @default(BOOKED)
+  auto_logged  Boolean       @default(false)
+  workout_id   String?
+  rating       Int?
+  review       String?
+  booked_at    DateTime      @default(now())
+  attended_at  DateTime?
+
+  user          User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workout_class WorkoutClass @relation(fields: [class_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, class_id])
+  @@index([user_id])
+  @@index([class_id])
+}
+
+model SpecialistProgram {
+  id             String      @id @default(uuid())
+  name           String
+  program_type   ProgramType
+  description    String?
+  duration_weeks Int         @default(12)
+  features       String[]
+  weekly_plans   Json
+  is_active      Boolean     @default(true)
+  price_inr      Float?
+  created_at     DateTime    @default(now())
+
+  enrollments ProgramEnrollment[]
+}
+
+model ProgramEnrollment {
+  id           String           @id @default(uuid())
+  user_id      String
+  program_id   String
+  status       EnrollmentStatus @default(ACTIVE)
+  started_at   DateTime         @default(now())
+  current_week Int              @default(1)
+  completed_at DateTime?
+  notes        String?
+
+  user    User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  program SpecialistProgram @relation(fields: [program_id], references: [id])
+
+  @@unique([user_id, program_id])
+  @@index([user_id])
+}
+
+model BloodSugarLog {
+  id           String         @id @default(uuid())
+  user_id      String
+  reading_mmol Float
+  reading_mgdl Float?
+  log_type     BloodSugarType
+  meal_ref     String?
+  notes        String?
+  logged_at    DateTime       @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, logged_at])
+}
+
+model CycleTracking {
+  id             String         @id @default(uuid())
+  user_id        String
+  period_start   DateTime
+  period_end     DateTime?
+  cycle_length   Int?
+  period_length  Int?
+  flow_intensity FlowIntensity?
+  symptoms       String[]
+  mood           String?
+  notes          String?
+  created_at     DateTime       @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, period_start])
 }

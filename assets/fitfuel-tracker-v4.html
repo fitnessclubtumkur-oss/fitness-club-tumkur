@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitFuel — Sprint Tracker v4</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0d0d0d; --bg2:#111; --bg3:#181818; --border:#222;
+    --text:#e8e8e8; --muted:#666; --accent:#e8f54e; --success:#2ecc71;
+    --warn:#f39c12; --danger:#e74c3c; --purple:#a269ff; --teal:#4ecdc4;
+    --orange:#ff6b35; --blue:#3498db; --font:'Segoe UI',system-ui,sans-serif;
+  }
+  body { background:var(--bg); color:var(--text); font-family:var(--font); padding:20px; max-width:1200px; margin:0 auto; }
+
+  .header { background:linear-gradient(135deg,#0d0d0d 0%,#1a1020 100%); border:1px solid #2a1a5a; border-radius:16px; padding:32px; margin-bottom:24px; text-align:center; position:relative; overflow:hidden; }
+  .header::before { content:''; position:absolute; top:-60px; right:-60px; width:250px; height:250px; background:radial-gradient(circle,rgba(162,105,255,.15) 0%,transparent 70%); pointer-events:none; }
+  .header h1 { font-size:30px; font-weight:800; color:var(--accent); letter-spacing:-1px; }
+  .header p  { color:var(--muted); margin-top:6px; font-size:13px; }
+
+  .summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:24px; }
+  .sc { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center; }
+  .sc .val { font-size:34px; font-weight:800; line-height:1; }
+  .sc .lbl { font-size:10px; color:var(--muted); margin-top:5px; text-transform:uppercase; letter-spacing:.8px; }
+  .sc.g { border-color:rgba(46,204,113,.3);  background:rgba(46,204,113,.06); }
+  .sc.y { border-color:rgba(232,245,78,.3);  background:rgba(232,245,78,.06); }
+  .sc.o { border-color:rgba(255,107,53,.3);  background:rgba(255,107,53,.06); }
+  .sc.p { border-color:rgba(162,105,255,.3); background:rgba(162,105,255,.06); }
+
+  .legend { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px; }
+  .li { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); }
+  .ld { width:10px; height:10px; border-radius:50%; }
+
+  .phase { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:22px; margin-bottom:18px; }
+  .ph { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
+  .pt { font-size:17px; font-weight:800; }
+  .pw { font-size:11px; color:var(--muted); }
+  .badge { padding:5px 14px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+  .bd { background:rgba(46,204,113,.15); color:var(--success); border:1px solid rgba(46,204,113,.3); }
+  .bb { background:rgba(232,245,78,.12); color:var(--accent);  border:1px solid rgba(232,245,78,.3); }
+  .bn { background:rgba(255,107,53,.12);  color:var(--orange); border:1px solid rgba(255,107,53,.3); }
+  .bf { background:rgba(102,102,102,.15); color:var(--muted);  border:1px solid rgba(102,102,102,.3); }
+
+  .pb { margin-bottom:18px; }
+  .pbh { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:5px; }
+  .pbr { height:6px; background:var(--bg3); border-radius:3px; overflow:hidden; }
+  .pbf { height:100%; border-radius:3px; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:10px; }
+  .feat { display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border-radius:10px; border:1px solid var(--border); background:var(--bg3); font-size:13px; }
+  .feat.done   { border-color:rgba(46,204,113,.2);  background:rgba(46,204,113,.04); }
+  .feat.built  { border-color:rgba(232,245,78,.2);  background:rgba(232,245,78,.03); }
+  .feat.next   { border-color:rgba(255,107,53,.2);  background:rgba(255,107,53,.04); }
+  .feat.future { border-color:rgba(102,102,102,.2); opacity:.65; }
+  .fi { font-size:18px; flex-shrink:0; margin-top:1px; }
+  .fb { flex:1; }
+  .fn { font-weight:600; line-height:1.3; }
+  .fs { font-size:11px; color:var(--muted); margin-top:3px; line-height:1.4; }
+  .tag { display:inline-block; margin-top:5px; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; letter-spacing:.3px; }
+  .td  { background:rgba(46,204,113,.15); color:var(--success); }
+  .tb  { background:rgba(232,245,78,.12); color:var(--accent); }
+  .tn  { background:rgba(255,107,53,.12);  color:var(--orange); }
+  .tf  { background:rgba(102,102,102,.12); color:var(--muted); }
+
+  .sl { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin:16px 0 8px; }
+
+  .ep-list { display:flex; flex-direction:column; gap:3px; }
+  .ep { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:6px; font-family:monospace; font-size:11.5px; }
+  .ep.done  { background:rgba(46,204,113,.05); color:#aaa; }
+  .ep.built { background:rgba(232,245,78,.04); color:var(--text); }
+  .ep.next  { background:rgba(255,107,53,.05); color:#ccc; }
+  .ep.future{ background:rgba(80,80,80,.07); color:var(--muted); }
+  .m { font-size:9px; font-weight:800; padding:2px 5px; border-radius:3px; flex-shrink:0; }
+  .mg { background:rgba(52,152,219,.2); color:var(--blue); }
+  .mp { background:rgba(46,204,113,.2); color:var(--success); }
+  .mu { background:rgba(243,156,18,.2); color:var(--warn); }
+  .md { background:rgba(231,76,60,.2);  color:var(--danger); }
+  .mpa{ background:rgba(162,105,255,.2); color:var(--purple); }
+
+  .tl { display:flex; flex-direction:column; }
+  .ti { display:flex; gap:16px; align-items:flex-start; padding:11px 0; border-left:2px solid var(--border); padding-left:20px; position:relative; }
+  .ti::before { content:''; position:absolute; left:-6px; top:16px; width:10px; height:10px; border-radius:50%; border:2px solid var(--border); background:var(--bg); }
+  .ti.done::before   { background:var(--success); border-color:var(--success); }
+  .ti.cur::before    { background:var(--accent);  border-color:var(--accent); box-shadow:0 0 8px rgba(232,245,78,.4); }
+  .ti.next::before   { background:var(--orange);  border-color:var(--orange); }
+  .tw { font-size:11px; color:var(--muted); white-space:nowrap; min-width:65px; }
+  .tc .tt { font-weight:700; font-size:13px; }
+  .tc .td2 { font-size:11px; color:var(--muted); margin-top:3px; }
+
+  .highlight { background:linear-gradient(135deg,#0a1a0a 0%,#0d160d 100%); border:1px solid rgba(46,204,113,.3); border-radius:14px; padding:22px; margin-bottom:18px; }
+  .highlight h2 { color:var(--success); font-size:17px; font-weight:800; margin-bottom:14px; }
+
+  .vars { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:16px; margin-top:14px; }
+  .vars h3 { font-size:13px; font-weight:700; color:var(--accent); margin-bottom:10px; }
+  .var-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
+  .var-row:last-child { border:none; }
+  .var-name { font-family:monospace; color:var(--text); }
+  .var-req { padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; }
+  .req  { background:rgba(231,76,60,.15);   color:var(--danger); }
+  .opt  { background:rgba(102,102,102,.15); color:var(--muted); }
+  .live { background:rgba(46,204,113,.15);  color:var(--success); }
+
+  .new-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:10px; font-size:10px; font-weight:800; letter-spacing:.5px; background:rgba(232,245,78,.18); color:var(--accent); border:1px solid rgba(232,245,78,.35); margin-left:8px; vertical-align:middle; }
+
+  @media(max-width:600px){
+    .summary{grid-template-columns:repeat(2,1fr);}
+    .grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="font-size:13px;color:var(--purple);font-weight:700;letter-spacing:2px;margin-bottom:8px;">FITFUEL PLATFORM</div>
+  <h1>🚀 Sprint Tracker — v4</h1>
+  <p>52-Week Build Plan · Updated after Phase 3A · March 2026</p>
+</div>
+
+<div class="legend">
+  <div class="li"><div class="ld" style="background:var(--success)"></div>Built & Live</div>
+  <div class="li"><div class="ld" style="background:var(--accent)"></div>Built This Sprint</div>
+  <div class="li"><div class="ld" style="background:var(--orange)"></div>Next Sprint</div>
+  <div class="li"><div class="ld" style="background:var(--muted)"></div>Future</div>
+</div>
+
+<div class="summary">
+  <div class="sc g"><div class="val" style="color:var(--success)">95%</div><div class="lbl">Overall</div></div>
+  <div class="sc g"><div class="val" style="color:var(--success)">112</div><div class="lbl">API Endpoints</div></div>
+  <div class="sc y"><div class="val" style="color:var(--accent)">17</div><div class="lbl">Controllers</div></div>
+  <div class="sc y"><div class="val" style="color:var(--accent)">16</div><div class="lbl">Route Files</div></div>
+  <div class="sc o"><div class="val" style="color:var(--orange)">7</div><div class="lbl">Cron Jobs Live</div></div>
+  <div class="sc p"><div class="val" style="color:var(--purple)">1</div><div class="lbl">Phase Left</div></div>
+</div>
+
+<!-- TIMELINE -->
+<div class="phase">
+  <div class="ph"><div><div class="pt">📅 52-Week Timeline</div><div class="pw">Current: Month 13–15</div></div></div>
+  <div class="tl">
+    <div class="ti done"><div class="tw">Wk 1–4</div><div class="tc"><div class="tt" style="color:var(--success)">✅ Phase 0 — Foundation</div><div class="td2">Railway · PostgreSQL · Redis · JWT · 43-table schema</div></div></div>
+    <div class="ti done"><div class="tw">Wk 5–12</div><div class="tc"><div class="tt" style="color:var(--success)">✅ Phase 1A — Fitness MVP</div><div class="td2">Auth · 6 workouts · MET calories · 109 Indian foods · onboarding</div></div></div>
+    <div class="ti done"><div class="tw">Wk 13–20</div><div class="tc"><div class="tt" style="color:var(--success)">✅ Phase 1B — Meal Tracking</div><div class="td2">Meal logging · 18 nutrients · barcode · voice · offline sync · PWA</div></div></div>
+    <div class="ti done"><div class="tw">Wk 21–28</div><div class="tc"><div class="tt" style="color:var(--success)">✅ Phase 1C — Cloud Kitchen</div><div class="td2">Orders · delivery · auto-log · reviews · subscriptions · kitchen dashboard</div></div></div>
+    <div class="ti done"><div class="tw">Wk 29–36</div><div class="tc"><div class="tt" style="color:var(--success)">✅ Phase 2A — Gamification</div><div class="td2">14 badges · leaderboards · friends · kudos · clubs · challenges · feed</div></div></div>
+    <div class="ti done"><div class="tw">Wk 37–44</div><div class="tc"><div class="tt" style="color:var(--success)">✅ Phase 2B — AI Coaching</div><div class="td2">Claude insights · photo recognition · recipes · mood · voice AI</div></div></div>
+    <div class="ti done"><div class="tw">Wk 45–48</div><div class="tc"><div class="tt" style="color:var(--success)">✅ Phase 2C — Preferences + Analytics</div><div class="td2">Dietary prefs · weight history · measurements · progress · subscription UI</div></div></div>
+    <div class="ti done"><div class="tw">Wk 49–52</div><div class="tc"><div class="tt" style="color:var(--success)">✅ Sprint 3 — Payments + Wearables + SMS</div><div class="td2">Razorpay UPI · Fitbit/Google Fit OAuth · MSG91 SMS · 5 cron jobs</div></div></div>
+    <div class="ti cur"><div class="tw">Mo 13–15</div><div class="tc"><div class="tt" style="color:var(--accent)">🔨 Phase 3A — Live Classes + Specialist Programs <span class="new-badge">JUST BUILT</span></div><div class="td2">12 live/recorded classes · 5 specialist programs · blood sugar logging · cycle tracking · multi-city · delivery routing · 7 cron jobs</div></div></div>
+    <div class="ti next"><div class="tw">Mo 15–18</div><div class="tc"><div class="tt" style="color:var(--orange)">⏳ Phase 3B — Premium Expansion</div><div class="td2">Lab tests · Swiggy/Zomato · Kannada localisation · 5 cities · Series B prep</div></div></div>
+  </div>
+</div>
+
+<!-- PHASE 3A — JUST BUILT -->
+<div class="highlight">
+  <h2>✅ Phase 3A — Just Built</h2>
+  <div class="grid">
+    <div class="feat built"><div class="fi">🎥</div><div class="fb"><div class="fn">Live &amp; Recorded Classes</div><div class="fs">12 classes seeded (yoga, HIIT, zumba, pilates…). Book → attend → auto-log workout. Rating system. Live schedule with daily 6am yoga + 6:30pm HIIT.</div><span class="tag tb">THIS SPRINT</span></div></div>
+    <div class="feat built"><div class="fi">🩺</div><div class="fb"><div class="fn">Specialist Programs</div><div class="fs">5 programs: Diabetes 12-wk · PCOS 12-wk · Heart Health 8-wk · Thyroid 10-wk · Weight Loss 16-wk. Full weekly plans, enroll/pause/complete flow.</div><span class="tag tb">THIS SPRINT</span></div></div>
+    <div class="feat built"><div class="fi">🩸</div><div class="fb"><div class="fn">Blood Sugar Logging</div><div class="fs">Log in mmol/L or mg/dL. WHO risk classification (LOW/NORMAL/ELEVATED/HIGH). In-range % stats. Fasting vs post-meal aware thresholds.</div><span class="tag tb">THIS SPRINT</span></div></div>
+    <div class="feat built"><div class="fi">🌙</div><div class="fb"><div class="fn">Cycle Tracking + Predictions</div><div class="fs">Period log with flow intensity, symptoms, mood. Greedy next-3-period predictor from cycle length history. Symptom frequency analytics.</div><span class="tag tb">THIS SPRINT</span></div></div>
+    <div class="feat built"><div class="fi">🏙️</div><div class="fb"><div class="fn">Multi-city Kitchen</div><div class="fs">City-based kitchen discovery. Delhi 2nd kitchen support. Delivery route optimisation — greedy nearest-neighbour with cumulative ETA per stop.</div><span class="tag tb">THIS SPRINT</span></div></div>
+    <div class="feat built"><div class="fi">⏰</div><div class="fb"><div class="fn">+2 New Cron Jobs (7 total)</div><div class="fs">Live class SMS reminder (5:30am IST daily) · Auto program week-advance (Monday 8am IST). Total background jobs: 7.</div><span class="tag tb">THIS SPRINT</span></div></div>
+  </div>
+
+  <div class="vars">
+    <h3>🔑 New Railway Variables (Phase 3A)</h3>
+    <div class="var-row"><span class="var-name">MSG91_TPL_CLASS</span><span class="var-req opt">SMS template ID — live class reminders</span></div>
+    <div class="var-row"><span class="var-name">RAZORPAY_KEY_ID</span><span class="var-req live">✅ Set in Sprint 3</span></div>
+    <div class="var-row"><span class="var-name">MSG91_AUTH_KEY</span><span class="var-req live">✅ Set in Sprint 3</span></div>
+    <div class="var-row"><span class="var-name">CLAUDE_API_KEY</span><span class="var-req live">✅ Already set</span></div>
+    <div class="var-row"><span class="var-name">DATABASE_URL</span><span class="var-req live">✅ Already set</span></div>
+  </div>
+
+  <div class="vars" style="margin-top:10px;">
+    <h3>📦 Phase 3A — Files Added</h3>
+    <div class="var-row"><span class="var-name">src/controllers/classes.controller.js</span><span class="var-req live">NEW</span></div>
+    <div class="var-row"><span class="var-name">src/controllers/programs.controller.js</span><span class="var-req live">NEW</span></div>
+    <div class="var-row"><span class="var-name">src/routes/classes.routes.js</span><span class="var-req live">NEW</span></div>
+    <div class="var-row"><span class="var-name">src/routes/programs.routes.js</span><span class="var-req live">NEW</span></div>
+    <div class="var-row"><span class="var-name">tests/phase3a.test.js</span><span class="var-req live">NEW — 25 tests</span></div>
+    <div class="var-row"><span class="var-name">prisma/schema.prisma</span><span class="var-req opt">+8 models · +6 enums</span></div>
+    <div class="var-row"><span class="var-name">prisma/seed.js</span><span class="var-req opt">+12 classes · +5 programs</span></div>
+    <div class="var-row"><span class="var-name">src/utils/scheduler.js</span><span class="var-req opt">+2 cron jobs</span></div>
+    <div class="var-row"><span class="var-name">src/app.js</span><span class="var-req opt">+2 route mounts</span></div>
+  </div>
+</div>
+
+<!-- PHASES 0–Sprint 3 (Complete) -->
+<div class="phase">
+  <div class="ph"><div><div class="pt">Phases 0 → Sprint 3 — Foundation + MVP + Kitchen + Gamification + AI + Payments</div><div class="pw">Weeks 1–52</div></div><span class="badge bd">✅ 100% Complete</span></div>
+  <div class="pb"><div class="pbh"><span>All features</span><span>100%</span></div><div class="pbr"><div class="pbf" style="width:100%;background:var(--success)"></div></div></div>
+  <div class="grid">
+    <div class="feat done"><div class="fi">🚂</div><div class="fb"><div class="fn">Railway Infrastructure</div><div class="fs">Deploy · PostgreSQL · Redis · JWT · nixpacks · CORS · rate limiting</div><span class="tag td">LIVE</span></div></div>
+    <div class="feat done"><div class="fi">🏋️</div><div class="fb"><div class="fn">6 Workout Types</div><div class="fs">Cardio · Resistance · Yoga · Aerobics · Running · Trekking — MET calorie burn</div><span class="tag td">LIVE</span></div></div>
+    <div class="feat done"><div class="fi">🍽️</div><div class="fb"><div class="fn">Meal Logging (109 Indian foods)</div><div class="fs">Raw weight · 18 nutrients · barcode · voice · offline sync · macro rings</div><span class="tag td">LIVE</span></div></div>
+    <div class="feat done"><div class="fi">🏪</div><div class="fb"><div class="fn">Cloud Kitchen Full Stack</div><div class="fs">25-meal menu · orders · delivery · OTP · auto-log · reviews · subs · staff queue</div><span class="tag td">LIVE</span></div></div>
+    <div class="feat done"><div class="fi">🏆</div><div class="fb"><div class="fn">Gamification + Social</div><div class="fs">14 badges · 3 leaderboard types · friends · kudos · clubs · challenges · feed</div><span class="tag td">LIVE</span></div></div>
+    <div class="feat done"><div class="fi">✨</div><div class="fb"><div class="fn">Claude AI Coach</div><div class="fs">Weekly narrative · photo meal ID · AI voice parse · recipes · mood insights</div><span class="tag td">LIVE</span></div></div>
+    <div class="feat done"><div class="fi">📊</div><div class="fb"><div class="fn">Progress + Preferences (2C)</div><div class="fs">Weight history chart · body measurements · 30-day analytics · dietary prefs · allergens</div><span class="tag td">LIVE</span></div></div>
+    <div class="feat done"><div class="fi">💳</div><div class="fb"><div class="fn">Razorpay Payments</div><div class="fs">UPI · order payment · subscription billing · webhook · payment history</div><span class="tag td">LIVE</span></div></div>
+    <div class="feat done"><div class="fi">⌚</div><div class="fb"><div class="fn">Wearables OAuth</div><div class="fs">Fitbit + Google Fit · steps · HR · sleep · merge across devices</div><span class="tag td">LIVE</span></div></div>
+    <div class="feat done"><div class="fi">📱</div><div class="fb"><div class="fn">MSG91 SMS</div><div class="fs">Order status · day-close summary · renewal reminders · class reminders</div><span class="tag td">LIVE</span></div></div>
+  </div>
+</div>
+
+<!-- PHASE 3A Complete -->
+<div class="phase">
+  <div class="ph"><div><div class="pt">Phase 3A — Live Classes + Multi-city + Specialist Programs</div><div class="pw">Months 13–15</div></div><span class="badge bb">✅ Just Built</span></div>
+  <div class="pb"><div class="pbh"><span>All planned features</span><span>100%</span></div><div class="pbr"><div class="pbf" style="width:100%;background:var(--accent)"></div></div></div>
+  <div class="grid">
+    <div class="feat built"><div class="fi">🎥</div><div class="fb"><div class="fn">Live Workout Classes</div><div class="fs">12 seeded classes · daily live 6am Yoga + 6:30pm HIIT · auto-log on completion · book/attend/rate flow</div><span class="tag tb">LIVE</span></div></div>
+    <div class="feat built"><div class="fi">🏙️</div><div class="fb"><div class="fn">Delhi Kitchen + Multi-city</div><div class="fs">City-based discovery API · shared menu DB · per-city kitchen registration · Delhi 2nd location ready</div><span class="tag tb">LIVE</span></div></div>
+    <div class="feat built"><div class="fi">🗺️</div><div class="fb"><div class="fn">Delivery Route Optimisation</div><div class="fs">Greedy nearest-neighbour algorithm · cumulative ETA per stop · distance in km · staff-facing route API</div><span class="tag tb">LIVE</span></div></div>
+    <div class="feat built"><div class="fi">🩺</div><div class="fb"><div class="fn">Diabetes + PCOS Programs</div><div class="fs">5 programs · 12–16 week plans · week-by-week progress · auto-advance cron · enroll/pause/complete</div><span class="tag tb">LIVE</span></div></div>
+    <div class="feat built"><div class="fi">🩸</div><div class="fb"><div class="fn">Blood Sugar Logging</div><div class="fs">mmol/L ↔ mg/dL · WHO risk thresholds · fasting vs post-meal logic · trend stats</div><span class="tag tb">LIVE</span></div></div>
+    <div class="feat built"><div class="fi">🌙</div><div class="fb"><div class="fn">Cycle Tracking</div><div class="fs">Period log + flow intensity + symptoms · next-3-period predictor · avg cycle stats</div><span class="tag tb">LIVE</span></div></div>
+  </div>
+</div>
+
+<!-- PHASE 3B — NEXT -->
+<div class="phase" style="opacity:.8;">
+  <div class="ph"><div><div class="pt">Phase 3B — Premium Expansion</div><div class="pw">Months 15–18</div></div><span class="badge bn">⏳ Next</span></div>
+  <div class="pb"><div class="pbh"><span>Features</span><span>0%</span></div><div class="pbr"><div class="pbf" style="width:0%;background:var(--orange)"></div></div></div>
+  <div class="grid">
+    <div class="feat next"><div class="fi">🧪</div><div class="fb"><div class="fn">Lab Test Integration</div><div class="fs">Metropolis/Apollo booking API · results auto-import · AI nutrition correlation · HbA1c + lipid panel</div><span class="tag tn">NEXT</span></div></div>
+    <div class="feat next"><div class="fi">🛺</div><div class="fb"><div class="fn">Swiggy/Zomato Healthy Restaurants</div><div class="fs">Verified healthy restaurants · nutrition pre-populated · auto-log on delivery · webhook integration</div><span class="tag tn">NEXT</span></div></div>
+    <div class="feat next"><div class="fi">🗣️</div><div class="fb"><div class="fn">Kannada Full Localisation</div><div class="fs">All UI strings · voice input in Kannada · Claude narratives in Kannada · language toggle</div><span class="tag tn">NEXT</span></div></div>
+    <div class="feat next"><div class="fi">🏙️</div><div class="fb"><div class="fn">5-City Expansion</div><div class="fs">Mumbai · Pune · Hyderabad · Chennai · ₹1 Cr/month kitchen revenue target · city-specific menus</div><span class="tag tn">NEXT</span></div></div>
+    <div class="feat next"><div class="fi">🤱</div><div class="fb"><div class="fn">Pregnancy Program</div><div class="fs">+300 kcal/day trimester plans · folic acid/iron tracking · pelvic floor exercises · breastfeeding macros</div><span class="tag tn">NEXT</span></div></div>
+    <div class="feat next"><div class="fi">📈</div><div class="fb"><div class="fn">Series B / Investor Dashboard</div><div class="fs">1M MAU target · ₹30 Cr fitness + ₹30 Cr kitchen MRR · cohort retention · LTV/CAC metrics</div><span class="tag tn">NEXT</span></div></div>
+  </div>
+</div>
+
+<!-- ALL ENDPOINTS -->
+<div class="phase">
+  <div class="ph"><div class="pt">🔌 All API Endpoints</div><div style="font-size:11px;color:var(--muted);">112 live · 10 next sprint</div></div>
+
+  <div class="sl">Auth + Profile + Workouts + Meals (Phases 0–1B)</div>
+  <div class="ep-list">
+    <div class="ep done"><span class="m mp">POST</span>/api/auth/register · login · forgot-password · reset-pin · logout · logout-all</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/auth/me · /api/health</div>
+    <div class="ep done"><span class="m mp">POST</span>/api/profile · /api/profile/goals &nbsp;<span class="m mg">GET</span>/api/profile · /api/profile/goals · /api/profile/recommended-macros</div>
+    <div class="ep done"><span class="m mp">POST</span>/api/workouts/cardio · resistance · yoga · aerobics · running · trekking</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/workouts · /api/workouts/stats &nbsp;<span class="m mu">PUT</span>/api/workouts/:id &nbsp;<span class="m md">DEL</span>/api/workouts/:id</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/meals/foods · /api/meals/foods/:id · /api/meals/foods/barcode/:code</div>
+    <div class="ep done"><span class="m mp">POST</span>/api/meals · /api/meals/bulk · /api/meals/calculate · /api/meals/voice</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/daily-summary · /api/weekly-summary · /api/nutrition/daily · weekly · top-foods · history · compare</div>
+    <div class="ep done"><span class="m mp">POST</span>/api/mood &nbsp;<span class="m mg">GET</span>/api/mood &nbsp;<span class="m mp">POST</span>/api/water</div>
+  </div>
+
+  <div class="sl">Cloud Kitchen (Phase 1C)</div>
+  <div class="ep-list">
+    <div class="ep done"><span class="m mg">GET</span>/api/kitchens · /api/kitchens/:id · /api/kitchens/:id/status &nbsp;<span class="m mp">POST</span>/api/kitchens</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/kitchen-meals · /api/kitchen-meals/:id &nbsp;<span class="m mp">POST</span>/api/kitchen-meals &nbsp;<span class="m mu">PUT</span>/api/kitchen-meals/:id</div>
+    <div class="ep done"><span class="m mp">POST</span>/api/orders &nbsp;<span class="m mg">GET</span>/api/orders · /api/orders/:id · /api/orders/:id/track</div>
+    <div class="ep done"><span class="m mp">POST</span>/api/orders/:id/cancel · /api/orders/:id/otp-verify &nbsp;<span class="m mpa">PATCH</span>/api/orders/:id/status</div>
+    <div class="ep done"><span class="m mp">POST</span>/api/subscriptions &nbsp;<span class="m mg">GET</span>/api/subscriptions &nbsp;<span class="m mu">PUT</span>/api/subscriptions/:id/pause · resume · cancel</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/kitchens/:id/inventory · /api/kitchens/:id/orders &nbsp;<span class="m mp">POST</span>/api/nutrition/auto-log</div>
+  </div>
+
+  <div class="sl">Gamification + Social (Phase 2A)</div>
+  <div class="ep-list">
+    <div class="ep done"><span class="m mg">GET</span>/api/achievements &nbsp;<span class="m mp">POST</span>/api/achievements/check</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/points · /api/leaderboards · /api/feed</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/challenges · /api/challenges/mine &nbsp;<span class="m mp">POST</span>/api/challenges · /api/challenges/:id/join</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/friends · /api/users/search &nbsp;<span class="m mp">POST</span>/api/friends/request · /api/friends/:id/accept · /api/kudos</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/clubs · /api/clubs/mine · /api/clubs/:id &nbsp;<span class="m mp">POST</span>/api/clubs · /api/clubs/:id/join</div>
+  </div>
+
+  <div class="sl">AI Coach + Recipes (Phase 2B) + Preferences + Progress (Phase 2C)</div>
+  <div class="ep-list">
+    <div class="ep done"><span class="m mp">POST</span>/api/insights/generate · /api/vision/analyze · /api/voice/parse &nbsp;<span class="m mg">GET</span>/api/insights</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/recipes · /api/recipes/community &nbsp;<span class="m mp">POST</span>/api/recipes · /api/recipes/:id/log · /api/recipes/:id/rate</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/preferences &nbsp;<span class="m mp">POST</span>/api/preferences/allergies · dietary · dislikes</div>
+    <div class="ep done"><span class="m mp">POST</span>/api/weight · /api/measurements &nbsp;<span class="m mg">GET</span>/api/weight/history · /api/measurements · /api/progress</div>
+  </div>
+
+  <div class="sl">Payments + Wearables + SMS (Sprint 3)</div>
+  <div class="ep-list">
+    <div class="ep done"><span class="m mp">POST</span>/api/payments/order · subscription · verify · webhook &nbsp;<span class="m mg">GET</span>/api/payments/history</div>
+    <div class="ep done"><span class="m mg">GET</span>/api/wearables · /api/wearables/data · /api/wearables/oauth/:device &nbsp;<span class="m mp">POST</span>/api/wearables/connect · sync/:device</div>
+    <div class="ep done"><span class="m mp">POST</span>/api/sms/order-status · day-close · renewal/:subId &nbsp;<span class="m mg">GET</span>/api/sms/logs</div>
+  </div>
+
+  <div class="sl">Live Classes (Phase 3A — JUST BUILT) <span class="new-badge">NEW</span></div>
+  <div class="ep-list">
+    <div class="ep built"><span class="m mg">GET</span>/api/classes &nbsp; — catalog (filter: type, level, is_live, free)</div>
+    <div class="ep built"><span class="m mg">GET</span>/api/classes/live &nbsp; — today's live schedule</div>
+    <div class="ep built"><span class="m mg">GET</span>/api/classes/:id &nbsp; — detail + avg rating + reviews</div>
+    <div class="ep built"><span class="m mp">POST</span>/api/classes &nbsp; — admin create class</div>
+    <div class="ep built"><span class="m mg">GET</span>/api/classes/my/bookings &nbsp; — user's booked + attended classes</div>
+    <div class="ep built"><span class="m mp">POST</span>/api/classes/:id/book &nbsp; — book / register</div>
+    <div class="ep built"><span class="m mp">POST</span>/api/classes/:id/complete &nbsp; — mark attended + auto-log workout</div>
+    <div class="ep built"><span class="m md">DEL</span>/api/classes/:id/book &nbsp; — cancel booking</div>
+    <div class="ep built"><span class="m mp">POST</span>/api/classes/:id/rate &nbsp; — rate 1–5 + review</div>
+  </div>
+
+  <div class="sl">Specialist Programs + Clinical (Phase 3A — JUST BUILT) <span class="new-badge">NEW</span></div>
+  <div class="ep-list">
+    <div class="ep built"><span class="m mg">GET</span>/api/programs &nbsp; — list (filter by type)</div>
+    <div class="ep built"><span class="m mg">GET</span>/api/programs/:id &nbsp; — full program detail + weekly plans</div>
+    <div class="ep built"><span class="m mp">POST</span>/api/programs/enroll &nbsp; — enroll user in program</div>
+    <div class="ep built"><span class="m mg">GET</span>/api/programs/my/enrollments &nbsp; — user's active + past programs</div>
+    <div class="ep built"><span class="m mp">POST</span>/api/programs/enrollments/:id/advance &nbsp; — advance to next week</div>
+    <div class="ep built"><span class="m mpa">PATCH</span>/api/programs/enrollments/:id/status &nbsp; — pause / resume / drop</div>
+    <div class="ep built"><span class="m mp">POST</span>/api/blood-sugar &nbsp; — log reading (mmol/mgdl + WHO risk)</div>
+    <div class="ep built"><span class="m mg">GET</span>/api/blood-sugar &nbsp; — history + in-range / below / above stats</div>
+    <div class="ep built"><span class="m mp">POST</span>/api/cycle &nbsp; — log period entry</div>
+    <div class="ep built"><span class="m mg">GET</span>/api/cycle &nbsp; — history + next-3-period predictions</div>
+    <div class="ep built"><span class="m mpa">PATCH</span>/api/cycle/:id &nbsp; — update entry</div>
+    <div class="ep built"><span class="m mg">GET</span>/api/kitchens/city/:city &nbsp; — multi-city kitchen discovery</div>
+    <div class="ep built"><span class="m mg">GET</span>/api/kitchens/:kitchen_id/delivery-route &nbsp; — optimised delivery route</div>
+  </div>
+
+  <div class="sl">Next Sprint (Phase 3B)</div>
+  <div class="ep-list">
+    <div class="ep next"><span class="m mp">POST</span>/api/labs/book &nbsp;<span class="m mg">GET</span>/api/labs/results (Metropolis / Apollo)</div>
+    <div class="ep next"><span class="m mg">GET</span>/api/restaurants/healthy (Swiggy/Zomato verified)</div>
+    <div class="ep next"><span class="m mg">GET</span>/api/i18n/strings?lang=kn (Kannada localisation)</div>
+    <div class="ep next"><span class="m mp">POST</span>/api/programs/pregnancy/enroll (Pregnancy program)</div>
+    <div class="ep next"><span class="m mg">GET</span>/api/investor/metrics (Series B dashboard)</div>
+    <div class="ep next"><span class="m mg">GET</span>/api/kitchens?city=mumbai · pune · hyderabad · chennai (5-city)</div>
+  </div>
+</div>
+
+<div style="text-align:center;padding:28px;color:var(--muted);font-size:12px;">
+  <div style="font-size:18px;margin-bottom:8px;">🚀</div>
+  <div style="font-weight:700;color:var(--text);font-size:13px;margin-bottom:4px;">FitFuel — Integrated Fitness &amp; Cloud Kitchen Platform</div>
+  <div>Railway · PostgreSQL · Express/Prisma · Claude AI · Razorpay · MSG91 · node-cron</div>
+  <div style="margin-top:8px;">
+    <span style="color:var(--success)">■</span> 112 endpoints live &nbsp;|&nbsp;
+    <span style="color:var(--accent)">■</span> Phase 3A complete &nbsp;|&nbsp;
+    <span style="color:var(--orange)">■</span> Phase 3B (lab tests · Swiggy · Kannada · 5 cities) next &nbsp;|&nbsp;
+    <span style="color:var(--muted)">■</span> Series B target
+  </div>
+</div>
+</body>
+</html>

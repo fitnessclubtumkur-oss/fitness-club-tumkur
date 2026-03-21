@@ -26,6 +26,8 @@ const preferencesRoutes   = require('./routes/preferences.routes');
 const wearablesRoutes     = require('./routes/wearables.routes');
 const paymentsRoutes      = require('./routes/payments.routes');
 const smsRoutes           = require('./routes/sms.routes');
+const classesRoutes       = require('./routes/classes.routes');    // Phase 3A
+const programsRoutes      = require('./routes/programs.routes');   // Phase 3A
 const { healthCheck }    = require('./controllers/dashboard.controller');
 
 const app = express();
@@ -112,6 +114,8 @@ app.use('/api',           preferencesRoutes);
 app.use('/api',           wearablesRoutes);
 app.use('/api',           paymentsRoutes);
 app.use('/api',           smsRoutes);
+app.use('/api',           classesRoutes);    // Phase 3A — Live Classes
+app.use('/api',           programsRoutes);   // Phase 3A — Specialist Programs + Blood Sugar + Cycle
 
 // ─── Serve PWA frontend ───────────────────────────────────────────────────────
 const path = require('path');

@@ -233,6 +233,79 @@ async function generateInsightForUser(userId, weekOf) {
   });
 }
 
+  // ── 6. LIVE CLASS REMINDER — Every day 5:30am IST (12:00 UTC) ──────────────
+  cron.schedule('0 0 * * *', async () => {
+    logger.info('[scheduler] Sending live class reminders');
+    try {
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const todayEnd   = new Date(); todayEnd.setHours(23, 59, 59, 999);
+
+      // Find today's live classes
+      const liveClasses = await prisma.workoutClass.findMany({
+        where: { is_live: true, is_active: true, scheduled_at: { gte: todayStart, lte: todayEnd } },
+      });
+      if (!liveClasses.length) return;
+
+      // Find all users who have booked them AND opted into SMS
+      for (const cls of liveClasses) {
+        const bookings = await prisma.classBooking.findMany({
+          where: { class_id: cls.id, status: 'BOOKED' },
+          include: { user: { select: { phone: true, name: true } } },
+        });
+
+        for (const b of bookings) {
+          if (!b.user.phone) continue;
+          try {
+            const timeStr = cls.scheduled_at
+              ? new Date(cls.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })
+              : 'today';
+            await sendSmsReminder(b.user.phone, b.user.name, cls.title, timeStr);
+            await sleep(300);
+          } catch (e) {
+            logger.warn({ err: e.message, user_id: b.user_id }, 'Class reminder SMS failed');
+          }
+        }
+      }
+      logger.info({ classes: liveClasses.length }, '[scheduler] Class reminders sent');
+    } catch (err) {
+      logger.error({ err }, '[scheduler] Class reminder job error');
+    }
+  }, { timezone: 'UTC' });
+
+  // ── 7. WEEKLY PROGRAM PROGRESS — Every Monday 8am IST (2:30 UTC) ──────────
+  cron.schedule('30 2 * * 1', async () => {
+    logger.info('[scheduler] Auto-advancing program weeks');
+    try {
+      const activeEnrollments = await prisma.programEnrollment.findMany({
+        where:   { status: 'ACTIVE' },
+        include: { program: { select: { duration_weeks: true, name: true } } },
+      });
+
+      let advanced = 0, completed = 0;
+      for (const e of activeEnrollments) {
+        const weeksPassed = Math.floor((Date.now() - new Date(e.started_at)) / (7 * 24 * 3600_000));
+        if (weeksPassed > e.current_week) {
+          if (weeksPassed >= e.program.duration_weeks) {
+            await prisma.programEnrollment.update({
+              where: { id: e.id },
+              data:  { status: 'COMPLETED', completed_at: new Date(), current_week: e.program.duration_weeks },
+            });
+            completed++;
+          } else {
+            await prisma.programEnrollment.update({
+              where: { id: e.id },
+              data:  { current_week: weeksPassed },
+            });
+            advanced++;
+          }
+        }
+      }
+      logger.info({ advanced, completed }, '[scheduler] Program week advance done');
+    } catch (err) {
+      logger.error({ err }, '[scheduler] Program week advance error');
+    }
+  }, { timezone: 'UTC' });
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function getWeekStart() {
   const d = new Date();
@@ -247,5 +320,23 @@ function getPeriodKey(period) {
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function sendSmsReminder(phone, name, classTitle, timeStr) {
+  const key = process.env.MSG91_AUTH_KEY;
+  if (!key) return;
+  const msg = `Hi ${name}! Your FitFuel class "${classTitle}" starts at ${timeStr} today. Join on time and burn those calories! 🔥`;
+  await fetch('https://api.msg91.com/api/v5/flow/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', authkey: key },
+    body: JSON.stringify({
+      template_id: process.env.MSG91_TPL_CLASS || '',
+      short_url: '0',
+      mobiles: phone.replace(/\D/g, '').replace(/^0/, '91'),
+      class_title: classTitle,
+      class_time:  timeStr,
+      name,
+    }),
+  });
+}
 
 module.exports = { startScheduler };

@@ -221,6 +221,142 @@ async function main() {
   const mealsResult = await prisma.kitchenMeal.createMany({ data: KITCHEN_MEALS, skipDuplicates: true });
   console.log(`   ✅ ${mealsResult.count} kitchen meals inserted`);
 
+  // ── Phase 3A: Live Classes ───────────────────────────────────────────────────
+  console.log('\n🎥 Seeding live workout classes...');
+  const CLASSES = [
+    // Recurring daily live classes
+    { title: 'Morning Yoga Flow', description: 'Start your day with sun salutations and pranayama. Suitable for all levels.', instructor: 'Priya Sharma', class_type: 'YOGA', level: 'ALL_LEVELS', duration_min: 45, calories_burn: 180, is_live: true, is_free: true, max_participants: 100, tags: ['morning','flexibility','breathing'], met_value: 3.0 },
+    { title: 'Evening HIIT Blast', description: 'High-intensity interval training. 30 min, maximum burn.', instructor: 'Rohit Nair', class_type: 'HIIT', level: 'INTERMEDIATE', duration_min: 30, calories_burn: 320, is_live: true, is_free: true, max_participants: 80, tags: ['evening','fat-burn','cardio'], met_value: 8.0 },
+    { title: 'Weekend Zumba Party', description: 'Dance your calories away. Latin-Bollywood fusion. All welcome!', instructor: 'Neha Kapoor', class_type: 'ZUMBA', level: 'ALL_LEVELS', duration_min: 60, calories_burn: 400, is_live: true, is_free: false, price_inr: 49, max_participants: 150, tags: ['weekend','dance','fun'], met_value: 6.5 },
+    // Recorded / on-demand
+    { title: 'Beginner Pilates Core', description: '28-day pilates programme. Strengthen your core, improve posture.', instructor: 'Aisha Menon', class_type: 'PILATES', level: 'BEGINNER', duration_min: 35, calories_burn: 160, is_live: false, is_free: true, tags: ['core','posture','beginner'], met_value: 3.5 },
+    { title: 'Power Strength 45', description: 'Compound movements — squats, deadlifts, rows. Full body strength.', instructor: 'Vikram Singh', class_type: 'STRENGTH', level: 'INTERMEDIATE', duration_min: 45, calories_burn: 280, is_live: false, is_free: true, tags: ['strength','muscle','compound'], met_value: 5.0 },
+    { title: 'Guided Meditation & Breathwork', description: 'Reduce cortisol, improve sleep. 20 min guided session.', instructor: 'Dr. Kavita Rao', class_type: 'MEDITATION', level: 'ALL_LEVELS', duration_min: 20, calories_burn: 40, is_live: false, is_free: true, tags: ['stress','sleep','mindfulness'], met_value: 1.5 },
+    { title: 'Indian Classical Dance Cardio', description: 'Bharatanatyam-inspired cardio. Fun, cultural, effective.', instructor: 'Deepa Krishnan', class_type: 'DANCE', level: 'BEGINNER', duration_min: 45, calories_burn: 350, is_live: false, is_free: false, price_inr: 99, tags: ['dance','cultural','cardio'], met_value: 6.5 },
+    { title: 'Morning Stretch & Mobility', description: 'Wake up your joints. 15 min daily mobility routine.', instructor: 'Priya Sharma', class_type: 'STRETCHING', level: 'ALL_LEVELS', duration_min: 15, calories_burn: 50, is_live: false, is_free: true, tags: ['morning','mobility','recovery'], met_value: 2.5 },
+    { title: 'Tabata Cardio Finisher', description: '20-sec on, 10-sec off × 8 rounds. 4 exercises, 16 min total.', instructor: 'Rohit Nair', class_type: 'CARDIO', level: 'ADVANCED', duration_min: 16, calories_burn: 220, is_live: false, is_free: true, tags: ['tabata','quick','intense'], met_value: 7.0 },
+    { title: 'Yoga for PCOS', description: 'Gentle yoga sequence targeting hormonal balance. Yin + restorative.', instructor: 'Dr. Kavita Rao', class_type: 'YOGA', level: 'BEGINNER', duration_min: 40, calories_burn: 130, is_live: false, is_free: true, tags: ['pcos','hormonal','gentle','women'], met_value: 2.5 },
+    { title: 'Diabetes-Friendly Low-Impact Cardio', description: 'Brisk walking intervals + light aerobics. Safe for diabetics.', instructor: 'Aisha Menon', class_type: 'CARDIO', level: 'BEGINNER', duration_min: 30, calories_burn: 160, is_live: false, is_free: true, tags: ['diabetes','low-impact','safe'], met_value: 4.0 },
+    { title: 'Weekend Warrior HIIT', description: 'Saturday special. 45 min full-body HIIT with warmup & cooldown.', instructor: 'Vikram Singh', class_type: 'HIIT', level: 'ADVANCED', duration_min: 45, calories_burn: 480, is_live: false, is_free: false, price_inr: 49, tags: ['weekend','advanced','challenge'], met_value: 9.0 },
+  ];
+  const classResult = await prisma.workoutClass.createMany({ data: CLASSES, skipDuplicates: true });
+  console.log(`   ✅ ${classResult.count} workout classes inserted`);
+
+  // ── Phase 3A: Specialist Programs ───────────────────────────────────────────
+  console.log('\n🩺 Seeding specialist programs...');
+  const PROGRAMS = [
+    {
+      name:           'Diabetes Reversal Program',
+      program_type:   'DIABETES',
+      description:    '12-week evidence-based program combining low-GI meal plans, resistance training, and blood sugar monitoring to manage Type 2 diabetes through lifestyle changes.',
+      duration_weeks: 12,
+      features:       ['Personalised low-GI meal plans','Blood sugar logging with trend analysis','Resistance + low-impact cardio routines','Weekly AI insights','Dedicated diabetes-friendly kitchen meals','Quarterly HbA1c tracker'],
+      price_inr:      1999,
+      weekly_plans: {
+        week1:  { theme: 'Foundation', focus: 'Baseline logging, low-GI diet intro, daily walks' },
+        week2:  { theme: 'Movement', focus: 'Add resistance 3×/week, pre/post meal readings' },
+        week3:  { theme: 'Nutrition', focus: 'Eliminate refined carbs, introduce legume-heavy meals' },
+        week4:  { theme: 'Review 1', focus: 'Check average fasting glucose, adjust meal plan' },
+        week5:  { theme: 'Intensify', focus: 'Increase workout duration, protein targets' },
+        week6:  { theme: 'Stress Management', focus: 'Meditation + yoga, cortisol & glucose link' },
+        week7:  { theme: 'Meal Timing', focus: 'Intermittent eating window, overnight fasting practice' },
+        week8:  { theme: 'Review 2', focus: 'Progress check, celebrate wins, recalibrate' },
+        week9:  { theme: 'Advanced Nutrition', focus: 'Fibre-loading, resistant starch foods' },
+        week10: { theme: 'Peak Fitness', focus: 'HIIT-lite circuits, maximum calorie deficit phase' },
+        week11: { theme: 'Maintenance', focus: 'Sustainable habits, social eating strategies' },
+        week12: { theme: 'Graduation', focus: 'Final review, lifelong plan, celebrate journey' },
+      },
+    },
+    {
+      name:           'PCOS Heal Program',
+      program_type:   'PCOS',
+      description:    '12-week holistic PCOS management through anti-inflammatory nutrition, cycle-synced workouts, stress reduction, and hormonal balance tracking.',
+      duration_weeks: 12,
+      features:       ['Cycle-synced workout plans','Anti-inflammatory Indian meal plans','Cycle tracking + period predictions','Yoga & Breathwork classes','Iron & folate tracking','Hormonal health insights'],
+      price_inr:      1499,
+      weekly_plans: {
+        week1:  { theme: 'Understand Your Cycle', focus: 'Baseline cycle logging, anti-inflammatory diet intro' },
+        week2:  { theme: 'Follicular Phase Fuel', focus: 'High-intensity in follicular phase, estrogen-balancing foods' },
+        week3:  { theme: 'Gut Health', focus: 'Probiotic foods, fiber, reduce dairy experiment' },
+        week4:  { theme: 'Review 1', focus: 'Cycle regularity check, energy levels assessment' },
+        week5:  { theme: 'Stress & Cortisol', focus: 'Adaptogen foods, yoga, 10-min daily meditation' },
+        week6:  { theme: 'Luteal Phase Support', focus: 'Gentle workouts, magnesium-rich foods, sleep hygiene' },
+        week7:  { theme: 'Insulin Sensitivity', focus: 'Low-GI focus, strength training benefits for PCOS' },
+        week8:  { theme: 'Review 2', focus: 'Symptom tracker review, adjust program' },
+        week9:  { theme: 'Detox & Liver Health', focus: 'Cruciferous vegs, turmeric protocol' },
+        week10: { theme: 'Strength Phase', focus: 'Build lean muscle to improve insulin sensitivity' },
+        week11: { theme: 'Cycle Harmony', focus: 'Full cycle awareness, track improvements' },
+        week12: { theme: 'Graduation', focus: 'Compare cycle data, celebrate, maintenance plan' },
+      },
+    },
+    {
+      name:           'Heart Health 8-Week Reset',
+      program_type:   'HEART_HEALTH',
+      description:    '8-week cardiac wellness program — DASH diet, progressive cardio, stress management, and cholesterol-conscious nutrition for Indian heart health.',
+      duration_weeks: 8,
+      features:       ['DASH diet meal plans','Progressive cardio protocol','Heart rate zone training','Sodium & saturated fat tracking','Stress & sleep optimization','Weekly cardio benchmarks'],
+      price_inr:      999,
+      weekly_plans: {
+        week1: { theme: 'Baseline', focus: 'Resting HR, BP log, DASH diet introduction' },
+        week2: { theme: 'Zone 2 Cardio', focus: '30 min daily zone 2 walking, reduce sodium' },
+        week3: { theme: 'Plant Power', focus: 'Vegetable-heavy meals, omega-3 sources' },
+        week4: { theme: 'Review 1', focus: 'Resting HR trend, fitness benchmark' },
+        week5: { theme: 'Intensity Up', focus: 'Add interval sessions, HIIT-lite' },
+        week6: { theme: 'Stress Protocol', focus: 'Meditation, sleep tracking, cortisol diet' },
+        week7: { theme: 'Peak Cardio', focus: 'Longest continuous cardio session of program' },
+        week8: { theme: 'Graduation', focus: 'Final HR benchmark, sustainable plan' },
+      },
+    },
+    {
+      name:           'Thyroid Wellness Program',
+      program_type:   'THYROID',
+      description:    '10-week thyroid support through selenium/iodine-balanced nutrition, low-inflammation diet, appropriate exercise pacing, and energy management.',
+      duration_weeks: 10,
+      features:       ['Thyroid-friendly meal plans','Selenium & iodine nutrient tracking','Energy-paced workouts','Anti-inflammatory foods','Fatigue management strategies','Gluten-free options'],
+      price_inr:      1299,
+      weekly_plans: {
+        week1:  { theme: 'Thyroid Nutrition 101', focus: 'Selenium foods, iodine sources, goitrogenic foods to limit' },
+        week2:  { theme: 'Energy Baseline', focus: 'Track energy levels, low-impact workouts only' },
+        week3:  { theme: 'Inflammation Control', focus: 'Turmeric, ginger protocol, anti-inflammatory Indian diet' },
+        week4:  { theme: 'Review 1', focus: 'Energy trend, symptom journal review' },
+        week5:  { theme: 'Gut-Thyroid Axis', focus: 'Probiotic foods, gut healing protocol' },
+        week6:  { theme: 'Progressive Movement', focus: 'Gradually increase workout intensity as energy allows' },
+        week7:  { theme: 'Stress & Cortisol', focus: 'Cortisol spikes affect T3/T4 — stress management focus' },
+        week8:  { theme: 'Review 2', focus: 'Full symptom vs energy vs activity correlation' },
+        week9:  { theme: 'Optimise & Peak', focus: 'Refined nutrition, steady workout schedule' },
+        week10: { theme: 'Graduation', focus: 'Long-term thyroid wellness plan' },
+      },
+    },
+    {
+      name:           'Weight Loss Intensive — 16 Weeks',
+      program_type:   'WEIGHT_LOSS_INTENSIVE',
+      description:    'Structured 16-week fat loss program — progressive caloric deficit, strength training to preserve muscle, and Indian meal plans. Evidence-based, no fad diets.',
+      duration_weeks: 16,
+      features:       ['Progressive calorie deficit (250–500 kcal/day)','Strength training 4×/week','Weekly weigh-ins + measurement tracking','High-protein Indian meal plans','Plateau-busting protocols','Community challenges & leaderboard'],
+      price_inr:      2499,
+      weekly_plans: {
+        week1:  { theme: 'Baseline', focus: 'TDEE calculation, macros set, baseline photos' },
+        week2:  { theme: 'Deficit Start', focus: '−250 kcal deficit, 3× strength workouts' },
+        week3:  { theme: 'Protein Priority', focus: 'Hit 1.6g/kg protein daily, add daily walks' },
+        week4:  { theme: 'Review 1', focus: 'Weigh-in, measurements, adjust if needed' },
+        week5:  { theme: 'Intensify', focus: '−350 kcal deficit, 4× strength workouts' },
+        week6:  { theme: 'NEAT Boost', focus: 'Steps target 8,000/day, stair challenges' },
+        week7:  { theme: 'Refeed', focus: 'Controlled refeed day, importance of metabolic flexibility' },
+        week8:  { theme: 'Review 2', focus: 'Progress photos, measurements, motivation check' },
+        week9:  { theme: 'Peak Deficit', focus: '−500 kcal, HIIT 2×/week added' },
+        week10: { theme: 'Body Recomposition', focus: 'Strength up + fat loss simultaneously' },
+        week11: { theme: 'Plateau Buster', focus: 'Macro cycling, carb-cycling protocol' },
+        week12: { theme: 'Review 3', focus: 'Total loss so far, adjust final 4 weeks' },
+        week13: { theme: 'Sprint', focus: 'Highest intensity phase' },
+        week14: { theme: 'Tighten', focus: 'Tightest nutrition compliance week' },
+        week15: { theme: 'Maintenance Preview', focus: 'Gradually reduce deficit, practise maintenance eating' },
+        week16: { theme: 'Graduation', focus: 'Final measurements, maintain plan, celebrate!' },
+      },
+    },
+  ];
+  const progResult = await prisma.specialistProgram.createMany({ data: PROGRAMS, skipDuplicates: true });
+  console.log(`   ✅ ${progResult.count} specialist programs inserted`);
+
   const foodTotal  = await prisma.food.count();
   const achTotal   = await prisma.achievement.count();
   const kitchTotal = await prisma.cloudKitchen.count();
@@ -228,11 +364,13 @@ async function main() {
 
   console.log('\n🎉 Seed complete!');
   const mealsTotal = await prisma.kitchenMeal.count();
-  console.log(`   Foods:         ${foodTotal}`);
-  console.log(`   Kitchen Meals: ${mealsTotal}`);
-  console.log(`   Achievements:  ${achTotal}`);
-  console.log(`   Kitchens:      ${kitchTotal}`);
-  console.log(`   Segments:      ${segTotal}`);
+  console.log('   Foods:         ', foodTotal);
+  console.log('   Kitchen Meals: ', mealsTotal);
+  console.log('   Achievements:  ', achTotal);
+  console.log('   Kitchens:      ', kitchTotal);
+  console.log('   Segments:      ', segTotal);
+  console.log('   Classes:       ', await prisma.workoutClass.count());
+  console.log('   Programs:      ', await prisma.specialistProgram.count());
 }
 
 main()

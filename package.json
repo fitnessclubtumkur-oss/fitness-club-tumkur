@@ -12,7 +12,8 @@
     "db:seed": "node prisma/seed.js",
     "db:studio": "prisma studio",
     "test": "jest --runInBand --forceExit",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:phase3a": "jest tests/phase3a.test.js --runInBand --forceExit"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
